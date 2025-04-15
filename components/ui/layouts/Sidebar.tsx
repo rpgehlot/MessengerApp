@@ -55,11 +55,11 @@ export default function  Sidebar( { chats, selectedChat, handleChatSelection} : 
 
     return (
         <div className={clsx('flex flex-col sm:min-w-sm min-w-full sm:max-w-sm sm:bg-zinc-50 p-3 sm:p-0', selectedChat ? 'md:flex hidden' : '')}>
-            <div className='flex items-center justify-between pl-4 mt-4'>
+            <div className='flex items-center justify-between pl-0 sm:pl-4 mt-4'>
                 <h1 className='font-bold text-2xl/10 text-zinc-800/70 items-start'>
                     Chats
                 </h1>
-                <span className='mr-4'>
+                <span className='sm:mr-0.5'>
                     <Popover modal={true} open={!!chatMenuOpenState} onOpenChange={() => {
                         setChatMenuOpenState(!chatMenuOpenState);
                     }}>

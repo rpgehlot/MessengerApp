@@ -2,6 +2,9 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { ChatWrapper } from '@/components/ui/layouts/chatWrapper';
 import { chats, loggedInUser } from '@/lib/placeholder-data';
+import { UserCircleIcon } from '@heroicons/react/16/solid';
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import clsx from 'clsx';
 
 export default async function Chats() {
   
@@ -31,7 +34,34 @@ export default async function Chats() {
                                 </svg>
                             </a>
                         </div>
-                        <div className='flex items-center gap-5'>
+                        <div className='flex items-center gap-5 cursor-pointer'>
+                            <span className='mr-0 sm:mr-5'>
+                            <Popover modal={true}>
+                                <PopoverTrigger>
+                                    <span className={clsx("inline-block align-middle pr-0 sm:p-2 cursor-pointer rounded-full focus:bg-gray-300/40 active:bg-gray-300/40")}>
+                                        <UserCircleIcon className='size-8 text-zinc-600/90' />
+                                    </span>
+                                </PopoverTrigger>
+                                <PopoverContent align='end' sideOffset={-3} className="w-40 sm:w-50 rounded-sm px-0">
+                                    <div className="flex flex-col text-sm sm:text-base text-zinc-800/90 font-light">
+
+                                     
+
+                                        <span key={'Select chats'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer">
+                                            Settings
+                                        </span>
+                                        <span key={'Select chats'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer">
+                                            Refer & earn 
+                                        </span>
+                                        <span key={'logout'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer" >
+                                            Log out
+                                        </span>
+
+                                       
+                                    </div>
+                                </PopoverContent>
+                            </Popover>
+                            </span>
                         </div>
                     </div>
                 </header>

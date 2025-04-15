@@ -24,7 +24,7 @@ export default function ProfileSection({
             </SheetTrigger>
         
             <SheetContent style={{ 'maxWidth' : 'none' }} className="w-full sm:w-sm lg:w-md">
-                <SheetHeader>
+                <SheetHeader className="overflow-auto">
                     <SheetTitle className="text-lg sm:text-2xl text-primary/60 leading-loose text-center">
                         <span>
                             Contact Info
