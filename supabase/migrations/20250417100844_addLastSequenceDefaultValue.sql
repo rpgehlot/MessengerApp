@@ -1,0 +1,1 @@
+alter table if exists public.last_sequence alter column last_sequence set default 0;
