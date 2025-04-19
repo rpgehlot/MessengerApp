@@ -14,7 +14,7 @@ import CreateNewGroupChat from "../custom/createNewGroupChat";
 
 const supabase = createClient()
 
-export default function  Sidebar( { chats, selectedChat, handleChatSelection} : ISidebarProps) {
+export default function  Sidebar( { chats, selectedChat, user, handleChatSelection} : ISidebarProps) {
 
     const [chatMenuOpenState, setChatMenuOpenState] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -152,6 +152,7 @@ export default function  Sidebar( { chats, selectedChat, handleChatSelection} : 
                             messages={chat.messages}
                             unreadMessagesCount={chat.unreadMessagesCount}
                             chatSelectionEnabled={chatSelectionEnabled}
+                            user={user}
                         />
                     ))}
                 </div>

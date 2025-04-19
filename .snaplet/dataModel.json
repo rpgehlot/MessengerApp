@@ -452,7 +452,7 @@
           "id": "public.channel_user_mapping.user_id",
           "name": "user_id",
           "columnName": "user_id",
-          "type": "int4",
+          "type": "uuid",
           "isRequired": true,
           "kind": "scalar",
           "isList": false,
@@ -484,24 +484,6 @@
           "relationName": "channel_user_mappingTochannels",
           "relationFromFields": [
             "channel_id"
-          ],
-          "relationToFields": [
-            "id"
-          ],
-          "isList": false,
-          "isId": false,
-          "isGenerated": false,
-          "sequence": false,
-          "hasDefaultValue": false
-        },
-        {
-          "name": "public_users",
-          "type": "public_users",
-          "isRequired": true,
-          "kind": "object",
-          "relationName": "channel_user_mappingTopublic_users",
-          "relationFromFields": [
-            "user_id"
           ],
           "relationToFields": [
             "id"
@@ -1414,7 +1396,7 @@
           "isList": false,
           "isGenerated": false,
           "sequence": false,
-          "hasDefaultValue": false,
+          "hasDefaultValue": true,
           "isId": false,
           "maxLength": null
         },
@@ -1502,7 +1484,7 @@
           "id": "public.messages.sender_id",
           "name": "sender_id",
           "columnName": "sender_id",
-          "type": "int4",
+          "type": "uuid",
           "isRequired": true,
           "kind": "scalar",
           "isList": false,
@@ -1548,24 +1530,6 @@
           "relationName": "public_messagesTochannels",
           "relationFromFields": [
             "channel_id"
-          ],
-          "relationToFields": [
-            "id"
-          ],
-          "isList": false,
-          "isId": false,
-          "isGenerated": false,
-          "sequence": false,
-          "hasDefaultValue": false
-        },
-        {
-          "name": "public_users",
-          "type": "public_users",
-          "isRequired": true,
-          "kind": "object",
-          "relationName": "public_messagesTopublic_users",
-          "relationFromFields": [
-            "sender_id"
           ],
           "relationToFields": [
             "id"
@@ -5446,17 +5410,13 @@
           "id": "public.users.id",
           "name": "id",
           "columnName": "id",
-          "type": "int4",
+          "type": "uuid",
           "isRequired": true,
           "kind": "scalar",
           "isList": false,
           "isGenerated": false,
-          "sequence": {
-            "identifier": "\"public\".\"users_id_seq\"",
-            "increment": 1,
-            "start": 1
-          },
-          "hasDefaultValue": true,
+          "sequence": false,
+          "hasDefaultValue": false,
           "isId": true,
           "maxLength": null
         },
@@ -5464,20 +5424,6 @@
           "id": "public.users.username",
           "name": "username",
           "columnName": "username",
-          "type": "varchar",
-          "isRequired": true,
-          "kind": "scalar",
-          "isList": false,
-          "isGenerated": false,
-          "sequence": false,
-          "hasDefaultValue": false,
-          "isId": false,
-          "maxLength": 50
-        },
-        {
-          "id": "public.users.password",
-          "name": "password",
-          "columnName": "password",
           "type": "varchar",
           "isRequired": true,
           "kind": "scalar",
@@ -5515,48 +5461,6 @@
           "hasDefaultValue": true,
           "isId": false,
           "maxLength": null
-        },
-        {
-          "name": "channel_user_mapping",
-          "type": "channel_user_mapping",
-          "isRequired": false,
-          "kind": "object",
-          "relationName": "channel_user_mappingTopublic_users",
-          "relationFromFields": [],
-          "relationToFields": [],
-          "isList": true,
-          "isId": false,
-          "isGenerated": false,
-          "sequence": false,
-          "hasDefaultValue": false
-        },
-        {
-          "name": "public_messages",
-          "type": "public_messages",
-          "isRequired": false,
-          "kind": "object",
-          "relationName": "public_messagesTopublic_users",
-          "relationFromFields": [],
-          "relationToFields": [],
-          "isList": true,
-          "isId": false,
-          "isGenerated": false,
-          "sequence": false,
-          "hasDefaultValue": false
-        },
-        {
-          "name": "users_metadata",
-          "type": "users_metadata",
-          "isRequired": false,
-          "kind": "object",
-          "relationName": "users_metadataTopublic_users",
-          "relationFromFields": [],
-          "relationToFields": [],
-          "isList": true,
-          "isId": false,
-          "isGenerated": false,
-          "sequence": false,
-          "hasDefaultValue": false
         }
       ],
       "uniqueConstraints": [
@@ -5603,7 +5507,7 @@
           "id": "public.users_metadata.user_id",
           "name": "user_id",
           "columnName": "user_id",
-          "type": "int4",
+          "type": "uuid",
           "isRequired": false,
           "kind": "scalar",
           "isList": false,
@@ -5670,22 +5574,18 @@
           "maxLength": null
         },
         {
-          "name": "public_users",
-          "type": "public_users",
-          "isRequired": false,
-          "kind": "object",
-          "relationName": "users_metadataTopublic_users",
-          "relationFromFields": [
-            "user_id"
-          ],
-          "relationToFields": [
-            "id"
-          ],
+          "id": "public.users_metadata.username",
+          "name": "username",
+          "columnName": "username",
+          "type": "varchar",
+          "isRequired": true,
+          "kind": "scalar",
           "isList": false,
-          "isId": false,
           "isGenerated": false,
           "sequence": false,
-          "hasDefaultValue": false
+          "hasDefaultValue": false,
+          "isId": false,
+          "maxLength": 50
         }
       ],
       "uniqueConstraints": [

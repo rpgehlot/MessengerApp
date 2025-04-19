@@ -8,11 +8,10 @@ import { Checkbox } from "@/components/ui/checkbox"
 
 
 export function AvatarRow(
-    { chatId, chatName, latestMessage, avatarUrl, isOnline, isGroupChat, messages = [], chatSelectionEnabled, unreadMessagesCount: x, onClick} : ChatProps
+    { chatId, chatName, latestMessage, avatarUrl, isOnline, isGroupChat, user, chatSelectionEnabled, unreadMessagesCount: x, onClick} : ChatProps
 ) {
-    const len = messages?.length;
-    const sentByMe = messages[len-1].sender.id === messages[len-1].loggedInUserId;
-    const [unReadMessagesState, setUnReadMessagesState]= useState<boolean>(messages[len - 1].read);
+    const sentByMe = latestMessage.senderId === user.id;
+    const [unReadMessagesState, setUnReadMessagesState]= useState<boolean>(latestMessage.read);
     const [unreadMessagesCount, setUnreadMessagesCount]= useState<number>(x);
     // const [checked, setChecked] = useState<boolean>(false);
     return (

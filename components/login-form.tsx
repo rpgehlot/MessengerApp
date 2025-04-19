@@ -63,7 +63,7 @@ export function LoginForm({
                     name="email"
                     placeholder="john.doe@gmail.com"
                     className="pl-11"
-                    // required
+                    required
                   />
                 </div>
               </div>
@@ -85,7 +85,7 @@ export function LoginForm({
                     id="password" 
                     type="password" 
                     name="password" 
-                    // required 
+                    required 
                   />
                 </div>
                 

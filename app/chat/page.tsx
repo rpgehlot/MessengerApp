@@ -1,23 +1,19 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/utils/supabase/server'
 import { ChatWrapper } from '@/components/ui/layouts/chatWrapper';
-import { chats, loggedInUser } from '@/lib/placeholder-data';
 import { UserCircleIcon } from '@heroicons/react/16/solid';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import clsx from 'clsx';
+import { fetchAllChats } from '../lib/data';
 
 export default async function Chats() {
   
-//   const supabase = await createClient()
-//   const { data, error } = await supabase.auth.getUser();
-
-//   console.log(data);
-//   if (error || !data?.user) {
-//     redirect('/login');
-//   }
-    
-
-
+  const supabase = await createClient()
+  const { data, error } = await supabase.auth.getUser();
+  const chats = await fetchAllChats(supabase);
+  if (error || !data?.user) {
+    redirect('/login');
+  }
   
   return (
         // {data.user && (
@@ -92,7 +88,7 @@ export default async function Chats() {
 
                                 </div>
 
-                            <ChatWrapper chats={chats} user={loggedInUser} />
+                            <ChatWrapper chats={chats} user={data.user} />
                             </div>
                         </article>
                     </main>

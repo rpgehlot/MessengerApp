@@ -1,19 +1,21 @@
 'use client';
 
-import { ChatProps, UserData } from "@/app/lib/descriptors";
+import { ChatProps } from "@/app/lib/descriptors";
 import { useState } from "react";
 import Sidebar from "./Sidebar";
 import MessagesWrapper from "./MessagesWrapper";
+import { createClient } from "@/utils/supabase/client";
+import { User } from "@supabase/supabase-js";
   
 type ChatWrapperProps = {
     chats : ChatProps[];
-    user: UserData;
+    user: User;
 };
+
 
 export function ChatWrapper(props : ChatWrapperProps) {
   
     const [selectedChat, setSelectedChat] = useState<ChatProps | null>(null);
-
 
     const handleClick = (chat : ChatProps | null) => {
         setSelectedChat(chat);
@@ -26,6 +28,7 @@ export function ChatWrapper(props : ChatWrapperProps) {
                 selectedChat={selectedChat} 
                 chats={props.chats} 
                 handleChatSelection={handleClick} 
+                user={props.user}
             />
 
             <MessagesWrapper 

@@ -25,7 +25,7 @@ const SignUpSchema = z.object({
 
 
 export async function signInAction(prevState : State,  formData: FormData) {
-  /*
+  
   const validatedFields = SignInSchema.safeParse({
     email : formData.get('email'),
     password : formData.get('password')
@@ -54,7 +54,7 @@ export async function signInAction(prevState : State,  formData: FormData) {
         errors : [error.message]
     }
   }
-*/
+
 
   revalidatePath('/chat', 'layout');
   redirect('/chat');

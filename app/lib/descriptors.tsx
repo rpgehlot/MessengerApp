@@ -1,7 +1,5 @@
-export interface UserData {
-    id : string;
-    email? : string;
-}
+import { User } from "@supabase/supabase-js";
+
 
 export interface ChatProps {
     chatId : number;
@@ -11,12 +9,15 @@ export interface ChatProps {
     latestMessage : {
         content : string;
         createdAt : string;
+        senderId : string;
+        read:boolean;
     }
-    avatarUrl : string;
+    avatarUrl? : string;
     unreadMessagesCount : number;
     onClick?: () => void;
     messages? : MessageBlock[];
-    chatSelectionEnabled? : boolean
+    chatSelectionEnabled? : boolean;
+    user : User;
 }
 
 export interface MessageBlock {
@@ -60,12 +61,13 @@ export interface ISidebarProps {
     chats : ChatProps[];
     selectedChat : ChatProps | null;
     handleChatSelection  : (chat: ChatProps) => void;
+    user : User;
 }
 
 export interface IMessagesWrapper {
     selectedChat : ChatProps | null;
     handleChatSelection  : (chat: ChatProps | null) => void;
-    user : UserData;
+    user : User;
 }
 
 export interface IMessagesHeaderProps {
