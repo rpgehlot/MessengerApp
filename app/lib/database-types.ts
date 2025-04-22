@@ -206,10 +206,10 @@ export type Database = {
           channel_id: number
         }[]
       }
-      checkifrecordsexists: {
-        Args: { user_id1: string; user_id2: string }
+      insert_message_and_update_sequence: {
+        Args: { p_channel_id: string; p_content: string; p_sender_id: string }
         Returns: {
-          channel_id: number
+          message_id: number
         }[]
       }
     }

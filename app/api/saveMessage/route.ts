@@ -14,6 +14,19 @@ export async function POST(request: Request) {
     console.log('messageBody : ',messageBody)
     let channelId = messageBody.channelId;
 
+    const { data, error } = await supabase.rpc('insert_message_and_update_sequence', {
+        p_channel_id: channelId,
+        p_content: messageBody.content,
+        p_sender_id: user.user?.id
+    });
+
+    if (error) {
+        console.error('Error:', error);
+        throw new Error('Error inserting message and updating sequence');
+    }
+
+    console.log('Inserted message with message_id:', data[0].message_id);
+    /*
     const { data, error} = await supabase.from('last_sequence').select(`last_sequence`).eq('channel_id',channelId);
     if (error)
         throw new Error('error fetching last_Sequence');
@@ -36,11 +49,11 @@ export async function POST(request: Request) {
     const { data: updateMessage, error:updateError } = await supabase.from('last_sequence').update({ 'last_sequence' :  data[0].last_sequence + 1 }).eq('channel_id',channelId).select();
     if(updateError)
         throw new Error('error updating message');
-
+*/
     const t1 = new Date().getTime();
     console.log('time elapsed in db calls : ',(t1 - t0), 'ms');
 
-    return Response.json({ insertedMessage })
+    return Response.json({ data })
   }
   
 
