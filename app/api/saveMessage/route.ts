@@ -3,7 +3,9 @@ import { createClient } from '@/utils/supabase/server'
 export async function POST(request: Request) {
 
     const messageBody = await request.json();
-    
+
+    const t0 = new Date().getTime();
+
     const supabase = await createClient();
     const {data:user, error :e} = await supabase.auth.getUser();
     if(e)
@@ -35,6 +37,8 @@ export async function POST(request: Request) {
     if(updateError)
         throw new Error('error updating message');
 
+    const t1 = new Date().getTime();
+    console.log('time elapsed in db calls : ',(t1 - t0), 'ms');
 
     return Response.json({ insertedMessage })
   }
