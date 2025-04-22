@@ -207,7 +207,7 @@ export type Database = {
         }[]
       }
       insert_message_and_update_sequence: {
-        Args: { p_channel_id: string; p_content: string; p_sender_id: string }
+        Args: { p_channel_id: number; p_content: string; p_sender_id: string }
         Returns: {
           message_id: number
         }[]

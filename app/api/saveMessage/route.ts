@@ -15,7 +15,7 @@ export async function POST(request: Request) {
     let channelId = messageBody.channelId;
 
     const { data, error } = await supabase.rpc('insert_message_and_update_sequence', {
-        p_channel_id: channelId,
+        p_channel_id: Number(channelId),
         p_content: messageBody.content,
         p_sender_id: user.user?.id
     });
