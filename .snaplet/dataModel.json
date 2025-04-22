@@ -493,6 +493,24 @@
           "isGenerated": false,
           "sequence": false,
           "hasDefaultValue": false
+        },
+        {
+          "name": "public_users",
+          "type": "public_users",
+          "isRequired": true,
+          "kind": "object",
+          "relationName": "channel_user_mappingTopublic_users",
+          "relationFromFields": [
+            "user_id"
+          ],
+          "relationToFields": [
+            "id"
+          ],
+          "isList": false,
+          "isId": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": false
         }
       ],
       "uniqueConstraints": [
@@ -548,7 +566,7 @@
           "name": "is_group",
           "columnName": "is_group",
           "type": "bool",
-          "isRequired": false,
+          "isRequired": true,
           "kind": "scalar",
           "isList": false,
           "isGenerated": false,
@@ -556,6 +574,34 @@
           "hasDefaultValue": true,
           "isId": false,
           "maxLength": null
+        },
+        {
+          "id": "public.channels.channel_description",
+          "name": "channel_description",
+          "columnName": "channel_description",
+          "type": "varchar",
+          "isRequired": false,
+          "kind": "scalar",
+          "isList": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": true,
+          "isId": false,
+          "maxLength": 200
+        },
+        {
+          "id": "public.channels.avatar_url",
+          "name": "avatar_url",
+          "columnName": "avatar_url",
+          "type": "varchar",
+          "isRequired": false,
+          "kind": "scalar",
+          "isList": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": true,
+          "isId": false,
+          "maxLength": 255
         },
         {
           "name": "channel_user_mapping",
@@ -1513,7 +1559,7 @@
           "name": "created_at",
           "columnName": "created_at",
           "type": "timestamp",
-          "isRequired": false,
+          "isRequired": true,
           "kind": "scalar",
           "isList": false,
           "isGenerated": false,
@@ -1530,6 +1576,24 @@
           "relationName": "public_messagesTochannels",
           "relationFromFields": [
             "channel_id"
+          ],
+          "relationToFields": [
+            "id"
+          ],
+          "isList": false,
+          "isId": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": false
+        },
+        {
+          "name": "public_users",
+          "type": "public_users",
+          "isRequired": true,
+          "kind": "object",
+          "relationName": "public_messagesTopublic_users",
+          "relationFromFields": [
+            "sender_id"
           ],
           "relationToFields": [
             "id"
@@ -5461,6 +5525,48 @@
           "hasDefaultValue": true,
           "isId": false,
           "maxLength": null
+        },
+        {
+          "name": "channel_user_mapping",
+          "type": "channel_user_mapping",
+          "isRequired": false,
+          "kind": "object",
+          "relationName": "channel_user_mappingTopublic_users",
+          "relationFromFields": [],
+          "relationToFields": [],
+          "isList": true,
+          "isId": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": false
+        },
+        {
+          "name": "public_messages",
+          "type": "public_messages",
+          "isRequired": false,
+          "kind": "object",
+          "relationName": "public_messagesTopublic_users",
+          "relationFromFields": [],
+          "relationToFields": [],
+          "isList": true,
+          "isId": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": false
+        },
+        {
+          "name": "users_metadata",
+          "type": "users_metadata",
+          "isRequired": false,
+          "kind": "object",
+          "relationName": "users_metadataTopublic_users",
+          "relationFromFields": [],
+          "relationToFields": [],
+          "isList": true,
+          "isId": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": false
         }
       ],
       "uniqueConstraints": [
@@ -5508,7 +5614,7 @@
           "name": "user_id",
           "columnName": "user_id",
           "type": "uuid",
-          "isRequired": false,
+          "isRequired": true,
           "kind": "scalar",
           "isList": false,
           "isGenerated": false,
@@ -5564,7 +5670,7 @@
           "name": "is_online",
           "columnName": "is_online",
           "type": "bool",
-          "isRequired": false,
+          "isRequired": true,
           "kind": "scalar",
           "isList": false,
           "isGenerated": false,
@@ -5586,6 +5692,38 @@
           "hasDefaultValue": false,
           "isId": false,
           "maxLength": 50
+        },
+        {
+          "id": "public.users_metadata.bio",
+          "name": "bio",
+          "columnName": "bio",
+          "type": "text",
+          "isRequired": true,
+          "kind": "scalar",
+          "isList": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": true,
+          "isId": false,
+          "maxLength": null
+        },
+        {
+          "name": "public_users",
+          "type": "public_users",
+          "isRequired": true,
+          "kind": "object",
+          "relationName": "users_metadataTopublic_users",
+          "relationFromFields": [
+            "user_id"
+          ],
+          "relationToFields": [
+            "id"
+          ],
+          "isList": false,
+          "isId": false,
+          "isGenerated": false,
+          "sequence": false,
+          "hasDefaultValue": false
         }
       ],
       "uniqueConstraints": [
@@ -5593,6 +5731,20 @@
           "name": "users_metadata_pkey",
           "fields": [
             "id"
+          ],
+          "nullNotDistinct": false
+        },
+        {
+          "name": "users_metadata_user_id_key",
+          "fields": [
+            "user_id"
+          ],
+          "nullNotDistinct": false
+        },
+        {
+          "name": "users_metadata_username_key",
+          "fields": [
+            "username"
           ],
           "nullNotDistinct": false
         }

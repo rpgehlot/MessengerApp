@@ -6,8 +6,8 @@ dotenv.config({ path: '.env.local' }); // Or .env, .env.development, etc.
 
 
 const supabase = createClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL_DEV!,
-    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE!
+    process.env.NEXT_PUBLIC_SUPABASE_URL_PROD!,
+    process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_PROD!
 );
 
 const deleteAllAuthUsers = async () => {

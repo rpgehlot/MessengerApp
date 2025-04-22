@@ -4,7 +4,7 @@ import { EllipsisVerticalIcon, MagnifyingGlassIcon } from "@heroicons/react/16/s
 import { Input } from "../input";
 import { ChatCategory, ChatProps, ISidebarProps } from "@/app/lib/descriptors";
 import { AvatarRow } from "../custom/AvatarRow";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/utils/supabase/client";
 import CreateNewChat from "../custom/createNewChat";
@@ -14,7 +14,7 @@ import CreateNewGroupChat from "../custom/createNewGroupChat";
 
 const supabase = createClient()
 
-export default function  Sidebar( { chats, selectedChat, user, handleChatSelection} : ISidebarProps) {
+export default function  Sidebar( { chats, selectedChat, user, chatState, handleChatSelection} : ISidebarProps) {
 
     const [chatMenuOpenState, setChatMenuOpenState] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>('');
@@ -24,17 +24,33 @@ export default function  Sidebar( { chats, selectedChat, user, handleChatSelecti
 
     const { replace } = useRouter();
 
+    useEffect(() => {
+        const list = chats.filter((chat) => {
+            const lowerCasedName = chat.chatName.toLowerCase();
+            return (
+                lowerCasedName.includes(searchQuery) ||
+                chat.latestMessage?.content.toLowerCase().includes(searchQuery)
+            )
+        }).sort((a,b) => {
+            if (a.latestMessage && b.latestMessage)
+                return new Date(b.latestMessage.createdAt).getTime() - new Date(a.latestMessage.createdAt).getTime();
+            return Infinity;
+        });
+        setFilteredChats(list);
+    },[chats]);
+
     const logOutUser = async () => {
         const { error } = await supabase.auth.signOut();
         if (!error)
             replace('/login');
     };
 
-    const openNewChat = () => {
-    };
-
     const onSelectChats = () => {
         setChatSelectionEnabled(true);
+        setChatMenuOpenState(false);
+    };
+
+    const closeChatMenu = () => {
         setChatMenuOpenState(false);
     };
 
@@ -45,7 +61,7 @@ export default function  Sidebar( { chats, selectedChat, user, handleChatSelecti
             const lowerCasedName = chat.chatName.toLowerCase();
             return (
                 lowerCasedName.includes(searchQuery) ||
-                chat.latestMessage.content.toLowerCase().includes(searchQuery)
+                chat.latestMessage?.content.toLowerCase().includes(searchQuery)
             )
         });
 
@@ -71,16 +87,16 @@ export default function  Sidebar( { chats, selectedChat, user, handleChatSelecti
                         <PopoverContent align='end' sideOffset={-3} className="w-40 sm:w-50 rounded-sm px-0">
                             <div className="flex flex-col text-sm sm:text-base text-zinc-800/90 font-light">
 
-                                <CreateNewChat>
-                                    <span key={'newUser'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer grow text-left" onClick={openNewChat}>
+                                <CreateNewChat setChatMenuOpenState={(open) => setChatMenuOpenState(open)}>
+                                    {/* <span key={'newUser'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer grow text-left" onClick={openNewChat}>
                                         New chat
-                                    </span>
+                                    </span> */}
                                 </CreateNewChat>
 
-                                <CreateNewGroupChat>
-                                    <span key={'groupChat'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer grow text-left">
+                                <CreateNewGroupChat user={user} setChatMenuOpenState={(open) => setChatMenuOpenState(open)}>
+                                    {/* <span key={'groupChat'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer grow text-left">
                                        Group Chat
-                                    </span>
+                                    </span> */}
                                 </CreateNewGroupChat>   
 
                                 <span key={'Select chats'} className="p-2 px-4 hover:bg-zinc-300/20 cursor-pointer" onClick={onSelectChats}>
@@ -141,7 +157,7 @@ export default function  Sidebar( { chats, selectedChat, user, handleChatSelecti
                             isGroupChat={chat.isGroupChat}
                             chatId={chat.chatId}
                             chatName={chat.chatName} 
-                            latestMessage={chat.latestMessage} 
+                            latestMessage={chatState[chat.chatId]?.latestMessage} 
                             avatarUrl={chat.avatarUrl}
                             isOnline={chat.isOnline}
                             onClick={() => { 

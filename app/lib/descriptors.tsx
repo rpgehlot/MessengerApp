@@ -5,19 +5,30 @@ export interface ChatProps {
     chatId : number;
     chatName : string;
     isGroupChat :boolean;
+    members: Array<{
+        userId : string;
+        name : string;
+        avatarUrl? : string;
+    }>;
     isOnline : boolean;
-    latestMessage : {
+    latestMessage? : {
         content : string;
         createdAt : string;
         senderId : string;
         read:boolean;
+        messageId : number;
     }
     avatarUrl? : string;
+    description? :string;
+    username? : string;
     unreadMessagesCount : number;
     onClick?: () => void;
     messages? : MessageBlock[];
     chatSelectionEnabled? : boolean;
     user : User;
+    newChat? : {
+        userId: string
+    }
 }
 
 export interface MessageBlock {
@@ -50,6 +61,37 @@ export interface IsTypingMessage {
     };
 }
 
+export type Message = {
+    content? : string;
+    createdAt : string;
+    messageId : number;
+    read : boolean;
+    sender : {
+        avatarUrl : string;
+        email : string;
+        id : string;
+        name : string;
+    };
+    media? : {
+        type : 'audio' | 'video' | 'image',
+        url : string;
+    };
+};
+
+
+
+export type ChatState = {
+    visited :  boolean;
+    latestMessage?  : {
+        content : string;
+        createdAt : string;
+        senderId : string;
+        read:boolean;
+        messageId : number;
+    };
+    messages : Message[];
+};
+
 export enum ChatCategory {
     ALL = 'ALL',
     GROUP = 'GROUP',
@@ -62,12 +104,14 @@ export interface ISidebarProps {
     selectedChat : ChatProps | null;
     handleChatSelection  : (chat: ChatProps) => void;
     user : User;
+    chatState : {[chatId : number] : ChatState};
 }
 
 export interface IMessagesWrapper {
     selectedChat : ChatProps | null;
     handleChatSelection  : (chat: ChatProps | null) => void;
     user : User;
+    messages : Message[];
 }
 
 export interface IMessagesHeaderProps {
@@ -91,12 +135,23 @@ export interface IProfileSectionProps {
 
 export interface ICreateNewChatProps {
     children? : React.ReactNode
+    setChatMenuOpenState : (x : boolean) => void;
+    user : User;
 }
 
 export interface ICreateNewGroupChatProps {
-    children? : React.ReactNode
+    children? : React.ReactNode;
+    setChatMenuOpenState : (x : boolean) => void;
+    user : User;
 }
 
 export interface IMuteNotificationProps {
     children? : React.ReactNode
+}
+
+export interface IUsersSearch{
+    name : string;
+    avatarUrl : string;
+    userId : string;
+    username : string;
 }

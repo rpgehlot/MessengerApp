@@ -1,24 +1,25 @@
 import { IMessagesFooterProps } from "@/app/lib/descriptors";
 import { EmojiPicker } from "@/lib/utils/hooks/EmojiPicker";
 import useOutsideClick from "@/lib/utils/hooks/useOutsideClick";
+import { FaceSmileIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { EmojiClickData } from "emoji-picker-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { useContext, useRef, useState } from "react";
 import { Input } from "../input";
-// import { FaceSmileIcon, PhotoIcon } from "@heroicons/react/16/solid";
-import { FaceSmileIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { ChatAppContext } from "./chatWrapper";
 
 export default function MessagesFooter({ 
         handleChatSelection, 
         selectedChat, 
         messageSelectionEnabled, 
         setMessageSelectionEnabled,
-        selectedMessages
+        selectedMessages,
     } : IMessagesFooterProps ) 
 {
 
     const [message, setMessage] = useState<string>('');
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState<boolean>(false);
+    const chatContext = useContext(ChatAppContext)
 
 
     const containerRef = useRef<HTMLDivElement>(null);
@@ -47,42 +48,48 @@ export default function MessagesFooter({
         })
     };
 
-    const onFormSubmit = (e) => {
+    const onMessageEntered = async (e:any) => {
         e.preventDefault();
+        console.log('onMessageEntered selectedChat : ',selectedChat)
+        let chatId = selectedChat.chatId;
+        if (selectedChat.newChat) {
+            const respone = await fetch('/api/channels/create',{ 
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    toUser : selectedChat.newChat.userId
+                }),
+            });
 
-        // alert('This message will be sent to api.  : '  + e.target.messageEntered.value);
-        if (e.target.messageEntered.value === '')
-            return;
+            const data = await respone.json();
+            console.log('data : ',data);
 
-        const newMessage = {
-            messageId : 9,
-            sender : {
-                name: 'Rituparn',
-                id : '628c9c75-c638-4fd6-8c39-515328e5a38b',
-                email : 'rpgehlot1991@gmail.com',
-                avatarUrl : 'https://randomuser.me/api/portraits/men/44.jpg'
+            chatContext.updateChats(data.response);
+            setTimeout(() => {
+                chatContext.handleClick(data.response);
+            },1000);
+            chatId = data.response.chatId;
+        }
+
+        await fetch('/api/saveMessage',{ 
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
-            createdAt : '2025-04-07T14:15:19.832Z',
-            content : e.target.messageEntered.value,
-            loggedInUserId : '628c9c75-c638-4fd6-8c39-515328e5a38b',
-            read : false,
-            displayName : true
-        };
-
-        handleChatSelection({
-            ...selectedChat,
-            messages : [
-                ...(selectedChat?.messages || []),
-                newMessage
-            ]
+            body: JSON.stringify({
+              content: message,
+              channelId: chatId,
+            }),
         });
-
+        
         setMessage('');
-    }
+    };
 
     return (
         <div className="flex h-14 sm:h-16 bg-zinc-200/70 p-2 box-border relative items-center justify-start">
-            {!messageSelectionEnabled && <form className="grow flex" onSubmit={onFormSubmit}>
+            {!messageSelectionEnabled && <form className="grow flex">
                     <div className="relative grow flex">
                         <div className="absolute left-2 top-1/2 align-middle transform -translate-y-[50%] cursor-pointer">
                             <span className="flex items-center cursor-pointer text-zinc-600" onClick={()=> setIsEmojiPickerOpen(true)}>
@@ -118,7 +125,7 @@ export default function MessagesFooter({
 
                         <Input ref={inputRef} name="messageEntered" className="bg-white border-0 h-10 sm:h-12 hover:border-none focus-visible:ring-[1px] md:text-base pl-24" placeholder="Type a message"  value={message} onChange={(e) => setMessage(e.target.value)}/>
                     </div>
-                    <button type="submit" className="min-w-12 flex items-center justify-center cursor-pointer hover:bg-zinc-200/50">
+                    <button className="min-w-12 flex items-center justify-center cursor-pointer hover:bg-zinc-200/50" onClick={onMessageEntered}>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                         </svg>

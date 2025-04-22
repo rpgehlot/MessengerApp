@@ -4,7 +4,7 @@ import { Message } from "../custom/MessageBlock";
 import MessagesHeader from "./MessagesHeader";
 import MessagesFooter from "./MessagesFooter";
 
-export default function MessagesWrapper({ selectedChat, user, handleChatSelection } : IMessagesWrapper){
+export default function MessagesWrapper({ selectedChat, user, messages, handleChatSelection } : IMessagesWrapper){
 
     
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -41,7 +41,7 @@ export default function MessagesWrapper({ selectedChat, user, handleChatSelectio
 
                     <div ref={messagesContainerRef} className="textChatArea grow  h-px overflow-auto">
                         <div style={{'overflowAnchor' : 'none'}} className="min-h-[12px] grow"></div>
-                        {selectedChat.messages?.map((message, i) => (
+                        {messages?.map((message, i) => (
                             <Message 
                                 key={`${message.messageId}_${i}`}
                                 displayName={selectedChat.isGroupChat}

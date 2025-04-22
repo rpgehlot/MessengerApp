@@ -23,7 +23,6 @@ const SignUpSchema = z.object({
     lastName : z.string()
 });
 
-
 export async function signInAction(prevState : State,  formData: FormData) {
   
   const validatedFields = SignInSchema.safeParse({

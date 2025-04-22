@@ -44,16 +44,22 @@ export type Database = {
       }
       channels: {
         Row: {
+          avatar_url: string | null
+          channel_description: string | null
           id: number
           is_group: boolean
           name: string
         }
         Insert: {
+          avatar_url?: string | null
+          channel_description?: string | null
           id?: number
           is_group?: boolean
           name: string
         }
         Update: {
+          avatar_url?: string | null
+          channel_description?: string | null
           id?: number
           is_group?: boolean
           name?: string
@@ -95,7 +101,7 @@ export type Database = {
         Insert: {
           channel_id: number
           content: string
-          created_at: string
+          created_at?: string
           entry_id?: number
           message_id: number
           sender_id: string
@@ -149,29 +155,32 @@ export type Database = {
       users_metadata: {
         Row: {
           avatar_url: string | null
+          bio: string
           first_name: string
           id: number
           is_online: boolean
           last_name: string
-          user_id: string | null
+          user_id: string
           username: string
         }
         Insert: {
           avatar_url?: string | null
+          bio?: string
           first_name: string
           id?: number
           is_online?: boolean
           last_name: string
-          user_id?: string | null
+          user_id: string
           username: string
         }
         Update: {
           avatar_url?: string | null
+          bio?: string
           first_name?: string
           id?: number
           is_online?: boolean
           last_name?: string
-          user_id?: string | null
+          user_id?: string
           username?: string
         }
         Relationships: [
@@ -189,7 +198,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      checkifcommonchannelexists: {
+        Args:
+          | { user_id1: string; user_id2: string }
+          | { user_id1: string; user_id2: string; isgroup: boolean }
+        Returns: {
+          channel_id: number
+        }[]
+      }
+      checkifrecordsexists: {
+        Args: { user_id1: string; user_id2: string }
+        Returns: {
+          channel_id: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never
