@@ -185,7 +185,8 @@ export function ChatWrapper(props : ChatWrapperProps) {
             handleClick,
             chats: chats,
             setSelectedChat : (chat:ChatProps) => setSelectedChat(chat),
-            updateChats 
+            updateChats ,
+            user:props.user
         }}>
             <div className='flex w-full h-[100%] md:h-[calc(100vh-88px)] box-border sm:border-1 sm:shadow-lg sm:mt-2 mb-4'>
                 <Sidebar 

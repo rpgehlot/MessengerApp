@@ -81,6 +81,7 @@ export default function MessagesFooter({
             body: JSON.stringify({
               content: message,
               channelId: chatId,
+              senderId : chatContext.user.id
             }),
         });
         
