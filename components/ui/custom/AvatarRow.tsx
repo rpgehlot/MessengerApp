@@ -5,7 +5,7 @@ import { ChatProps } from "@/app/lib/descriptors";
 import clsx from "clsx";
 import { useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox"
-
+import { formatDate } from '@/lib/utils'
 
 export function AvatarRow(
     { chatId, chatName, latestMessage, avatarUrl, isOnline, isGroupChat, user, chatSelectionEnabled, unreadMessagesCount: x, onClick} : ChatProps
@@ -13,7 +13,7 @@ export function AvatarRow(
     const sentByMe = latestMessage?.senderId === user.id;
     const [unReadMessagesState, setUnReadMessagesState]= useState<boolean>(!!latestMessage?.read);
     const [unreadMessagesCount, setUnreadMessagesCount]= useState<number>(x);
-    // const [checked, setChecked] = useState<boolean>(false);
+
     return (
         <div 
             className={clsx("flex items-center justify-start p-2 pb-0 pt-0 cursor-pointer rounded-sm hover:bg-secondary-foreground/10 relative mb-0.5 min-h-18", (!sentByMe && !unReadMessagesState) ? 'bg-[#ffc0cb45]' : '')}
@@ -34,7 +34,7 @@ export function AvatarRow(
                     <h4 className="font-semibold text-md/snug text-primary/70">{chatName}</h4>
 
                     <span className="text-xs">
-                        {moment(latestMessage?.createdAt).format('LT')}
+                        {latestMessage?.createdAt ? formatDate(latestMessage.createdAt) : null}
                     </span>
                 </div>
                 <div className="font-light text-sm text-secondary-foreground line-clamp-1">

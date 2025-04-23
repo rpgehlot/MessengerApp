@@ -26,6 +26,7 @@ export async function GET(request: NextRequest) {
             `)
             .eq('channel_id', channelId)
             .lte('message_id', lastMessageId)
+            .order('created_at',{ ascending : true})
             .limit(50)
 
     

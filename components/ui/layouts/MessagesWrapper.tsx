@@ -1,8 +1,10 @@
-import { IMessagesWrapper, MessageBlock } from "@/app/lib/descriptors";
+import { IMessagesWrapper, Message as MessageDescriptor, MessageBlock } from "@/app/lib/descriptors";
 import { useEffect, useRef, useState } from "react";
 import { Message } from "../custom/MessageBlock";
 import MessagesHeader from "./MessagesHeader";
 import MessagesFooter from "./MessagesFooter";
+import moment from "moment";
+import { formatDate } from "@/lib/utils";
 
 export default function MessagesWrapper({ selectedChat, user, messages, handleChatSelection } : IMessagesWrapper){
 
@@ -10,7 +12,23 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [messageSelectionEnabled, setMessageSelectionEnabled ] = useState<boolean>(false);
     const [selectedMessages, setSelectedMessages] = useState<MessageBlock[]>([]);
+    const [renderableMessageNodes, setRenderableMessageNodes] = useState<(MessageDescriptor | string)[]>([]);
+    
+    useEffect(() => {
+        const map : {[s : string ] : boolean} = {};
+        const list : (MessageDescriptor | string)[] = [];
+        messages.forEach((m) => {
+            const date = moment.utc(m.createdAt).local().format('DD/MM/YYYY');
+            if (!map[date]) 
+                list.push(formatDate(m.createdAt));
 
+            list.push(m);
+            map[date] = true;
+        });
+
+        setRenderableMessageNodes(list);
+    },[messages]);
+    
     useEffect(() => {
         setSelectedMessages([]);
         setMessageSelectionEnabled(false);
@@ -41,35 +59,46 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
 
                     <div ref={messagesContainerRef} className="textChatArea grow  h-px overflow-auto">
                         <div style={{'overflowAnchor' : 'none'}} className="min-h-[12px] grow"></div>
-                        {messages?.map((message, i) => (
-                            <Message 
-                                key={`${message.messageId}_${i}`}
-                                displayName={selectedChat.isGroupChat}
-                                createdAt={message.createdAt}
-                                sender={message.sender}
-                                content={message.content}
-                                loggedInUserId={user.id}
-                                messageId={message.messageId}
-                                media={message.media}
-                                read={message.read}
-                                messageSelectionEnabled={messageSelectionEnabled}
-                                onMessageSelectionChange={(message, checked) => {
-                                    console.log(message,checked)
-                                    console.log(selectedMessages)
-                                    if (checked) {
-                                        setSelectedMessages((messages) => {
-                                            return [
-                                                ...messages,
-                                                message
-                                            ]
-                                        });
-                                    }
-                                    else {
-                                        setSelectedMessages((prevMessages) => prevMessages.filter(msg => msg.messageId !== message.messageId));
-                                    }
-                                }}
-                            />
-                        ))}
+                        {renderableMessageNodes?.map((message, i) => {
+                            if (typeof message === 'string') {
+                                return (
+                                    <div style={{'overflowAnchor' : 'none'}} className="text-center mb-4">
+                                        <span className="p-2 bg-zinc-200/90 rounded-md text-sm">
+                                            {message}
+                                        </span>
+                                    </div>
+                                )
+                            }
+                            return (
+                                <Message 
+                                    key={`${message.messageId}_${i}`}
+                                    displayName={selectedChat.isGroupChat}
+                                    createdAt={message.createdAt}
+                                    sender={message.sender}
+                                    content={message.content}
+                                    loggedInUserId={user.id}
+                                    messageId={message.messageId}
+                                    media={message.media}
+                                    read={message.read}
+                                    messageSelectionEnabled={messageSelectionEnabled}
+                                    onMessageSelectionChange={(message, checked) => {
+                                        console.log(message,checked)
+                                        console.log(selectedMessages)
+                                        if (checked) {
+                                            setSelectedMessages((messages) => {
+                                                return [
+                                                    ...messages,
+                                                    message
+                                                ]
+                                            });
+                                        }
+                                        else {
+                                            setSelectedMessages((prevMessages) => prevMessages.filter(msg => msg.messageId !== message.messageId));
+                                        }
+                                    }}
+                                />
+                            )
+                        })}
                         <div style={{'overflowAnchor' : 'auto'}} id="anchor" className="h-px"></div>
                     </div>
 
