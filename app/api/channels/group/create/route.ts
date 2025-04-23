@@ -84,20 +84,13 @@ export async function POST(request: Request) {
         })
     };
 
-    users.forEach((u) => {
-        const toUserChannel = supabase.channel(u.user_id);
-        toUserChannel.subscribe((status) => {
-            if (status !== 'SUBSCRIBED') {
-                return null
-            }
-            toUserChannel.send({
-                type: 'broadcast',
-                event: 'shout',
-                payload : response,
-            })
-        });
-    
-    });
+    for (const u of users){
+        await supabase.channel(u.user_id).send({
+            type: 'broadcast',
+            event: 'shout',
+            payload: response,
+          })
+    }
 
     return Response.json({ response  })
 

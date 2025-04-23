@@ -163,6 +163,10 @@ export function ChatWrapper(props : ChatWrapperProps) {
                 (payload) => messageReceived(payload)
             )
             .subscribe()
+
+        return () => {
+            myChannel.unsubscribe();
+        };
     },[])
 
 
