@@ -123,17 +123,11 @@ export async function POST(request: Request) {
         response = generateResponse(channelId, otherUser[0], selfUser[0], insertChannel);
         const otherUserResponse = generateResponse(channelId, selfUser[0], otherUser[0], insertChannel);
 
-        const toUserChannel = supabase.channel(messageBody.toUser)
-        toUserChannel.subscribe((status) => {
-            if (status !== 'SUBSCRIBED') {
-              return null
-            }
-            toUserChannel.send({
-              type: 'broadcast',
-              event: 'shout',
-              payload: otherUserResponse,
-            })
-        });
+        await supabase.channel(messageBody.toUser).send({
+            type: 'broadcast',
+            event: 'shout',
+            payload: otherUserResponse,
+          })
     }
     else if (commonChannelExists.data.length > 0){
         channelId = commonChannelExists.data[0].channel_id;
