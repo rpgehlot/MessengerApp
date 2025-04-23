@@ -10,7 +10,10 @@ export async function POST(request: Request) {
     const {data:user, error :e} = await supabase.auth.getUser();
     if(e)
         throw new Error('error fetching user');
+    
+    const t1 = new Date().getTime();
 
+    console.log('Time elapsed in fetching auth data : ', (t1-t0),'ms');
     console.log('messageBody : ',messageBody)
     let channelId = messageBody.channelId;
 
@@ -50,8 +53,8 @@ export async function POST(request: Request) {
     if(updateError)
         throw new Error('error updating message');
 */
-    const t1 = new Date().getTime();
-    console.log('time elapsed in db calls : ',(t1 - t0), 'ms');
+    const t2 = new Date().getTime();
+    console.log('time elapsed in db call : ',(t2 - t1), 'ms');
 
     return Response.json({ data })
   }
