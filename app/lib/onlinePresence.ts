@@ -16,12 +16,12 @@ const channel = supabase.channel('online-users');
 
 channel?.on('presence', { event: 'sync' }, () => {
     const currPresentState = channel?.presenceState()
-    console.log('server inside presence: ', currPresentState);
+    // console.log('server inside presence: ', currPresentState);
 });
 
 
 channel?.on('presence', { event: 'join' }, async ({ newPresences}) => {
-    console.log(`Join listner ${joinListenerCount} newPresences :  ${newPresences}`);
+    console.log(`Join listner ${joinListenerCount} newPresences : `, newPresences);
     for (const presence of newPresences) {
         if (presence.userId) {
 
@@ -43,6 +43,11 @@ channel?.on('presence', { event: 'join' }, async ({ newPresences}) => {
     }
 });
 
+channel?.on('presence', { event: 'leave' }, async ({ leftPresences}) => {
+    console.log(`Join listner ${joinListenerCount} leftPresences : `, leftPresences);
+});
+
+
 channel?.subscribe(async (status) => {
     if (status === 'SUBSCRIBED') {
         joinListenerCount++;
@@ -50,7 +55,7 @@ channel?.subscribe(async (status) => {
         await channel.track({});
     }
 
-    console.log('status : ',status)
+    console.log('channel status : ',status)
 });
 
 
