@@ -88,7 +88,7 @@ export async function POST(request: Request) {
         await supabase.channel(u.user_id).send({
             type: 'broadcast',
             event: 'shout',
-            payload: response,
+            payload: {event : 'newChat', data : response},
           })
     }
 

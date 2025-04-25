@@ -21,3 +21,14 @@ const getSupabaseUrl = () => {
   
 export const supabaseUrl = getSupabaseUrl();
   
+
+const getSupabaseServiceRole = () => {
+  switch (process.env.NEXT_PUBLIC_ENV) {
+    case 'production':
+      return process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_PROD!;
+    default:
+      return process.env.NEXT_PUBLIC_SUPABASE_SERVICE_ROLE_DEV!;
+  }
+};
+
+export const supabaseServiceRole = getSupabaseServiceRole();

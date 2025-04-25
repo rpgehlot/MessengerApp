@@ -126,7 +126,7 @@ export async function POST(request: Request) {
         await supabase.channel(messageBody.toUser).send({
             type: 'broadcast',
             event: 'shout',
-            payload: otherUserResponse,
+            payload: {event : 'newChat', data : otherUserResponse},
           })
     }
     else if (commonChannelExists.data.length > 0){

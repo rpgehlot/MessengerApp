@@ -20,7 +20,7 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
         messages.forEach((m) => {
             const date = moment.utc(m.createdAt).local().format('DD/MM/YYYY');
             if (!map[date]) 
-                list.push(formatDate(m.createdAt));
+                list.push(formatDate(m.createdAt, true));
 
             list.push(m);
             map[date] = true;
@@ -62,7 +62,7 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
                         {renderableMessageNodes?.map((message, i) => {
                             if (typeof message === 'string') {
                                 return (
-                                    <div style={{'overflowAnchor' : 'none'}} className="text-center mb-4">
+                                    <div key={`${message}_${i}`} style={{'overflowAnchor' : 'none'}} className="text-center mb-4">
                                         <span className="p-2 bg-zinc-200/90 rounded-md text-sm">
                                             {message}
                                         </span>

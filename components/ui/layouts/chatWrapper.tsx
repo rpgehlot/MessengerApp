@@ -6,6 +6,7 @@ import Sidebar from "./Sidebar";
 import MessagesWrapper from "./MessagesWrapper";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
+import { Tables } from "@/app/lib/database-types";
   
 type ChatWrapperProps = {
     chats : ChatProps[];
@@ -21,7 +22,59 @@ export function ChatWrapper(props : ChatWrapperProps) {
 
     const [chatState, setChatState] = useState<{[chatId : number] : ChatState}>({});
     const [chats, setChats] = useState<ChatProps[]>(props.chats);
+    const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set([]));
 
+    const handleNewMessage = async (newMessage : Tables<'messages'>) => {
+        const { data: sender, error } = await supabase
+            .from("users")
+            .select(`
+                id,
+                email,
+                users_metadata (
+                    first_name,
+                    last_name,
+                    username,
+                    avatar_url
+                )
+            `)
+            .eq("id", newMessage.sender_id)
+            .single();
+        if(error){
+            console.log(error);
+            return;
+        }
+
+        
+        setChatState((s) => {
+            const data =  s[newMessage.channel_id] || { visited : false, messages : [] };
+
+            return {
+                ...s,
+                [newMessage.channel_id] : {
+                    ...data,
+                    latestMessage : {
+                        content : newMessage.content,
+                        messageId : newMessage.message_id,
+                        createdAt : newMessage.created_at,
+                        read : true,
+                        senderId : newMessage.sender_id
+                    },
+                    messages : [...data.messages, {
+                        content : newMessage.content,
+                        createdAt : newMessage.created_at,
+                        messageId : newMessage.message_id,
+                        read: true,
+                        sender : {
+                            avatarUrl : sender?.users_metadata?.avatar_url ?? '',
+                            email : sender?.email,
+                            id : sender?.id,
+                            name : `${sender?.users_metadata?.first_name} ${sender?.users_metadata?.last_name}`
+                        }
+                    }]
+                }
+            }
+        });
+    };
 
     useEffect(() => {
 
@@ -35,61 +88,8 @@ export function ChatWrapper(props : ChatWrapperProps) {
             table : 'messages',
             filter: `channel_id=in.(${chatIds.join(',')})`
         },async (payload) => {
-
-            const newMessage = payload.new;
-            const { data: sender, error } = await supabase
-                .from("users")
-                .select(`
-                    id,
-                    email,
-                    users_metadata (
-                        first_name,
-                        last_name,
-                        username,
-                        avatar_url
-                    )
-                `)
-                .eq("id", payload.new.sender_id)
-                .single();
-            if(error){
-                console.log(error);
-                return;
-            }
-
-            console.log({payload});
-            
-            setChatState((s) => {
-                const data =  s[newMessage.channel_id] || { visited : false, messages : [] };
-
-                return {
-                    ...s,
-                    [newMessage.channel_id] : {
-                        ...data,
-                        latestMessage : {
-                            content : newMessage.content,
-                            messageId : newMessage.message_id,
-                            createdAt : newMessage.created_at,
-                            read : true,
-                            senderId : newMessage.sender_id
-                        },
-                        messages : [...data.messages, {
-                            content : newMessage.content,
-                            createdAt : newMessage.created_at,
-                            messageId : newMessage.message_id,
-                            read: true,
-                            sender : {
-                                avatarUrl : sender?.users_metadata?.avatar_url ?? '',
-                                email : sender?.email,
-                                id : sender?.id,
-                                name : `${sender?.users_metadata?.first_name} ${sender?.users_metadata?.last_name}`
-                            }
-                        }]
-                    }
-                }
-            });
-
-
-            console.log(chatState)
+            const newMessage = payload.new as Tables<'messages'>;
+            handleNewMessage(newMessage);
         }).subscribe();
 
         return () => {
@@ -151,23 +151,77 @@ export function ChatWrapper(props : ChatWrapperProps) {
         // Join a room/topic. Can be anything except for 'realtime'.
         const myChannel = supabase.channel(props.user.id)
         // Simple function to log any messages we receive
-        function messageReceived(payload) {
+        function onNewChatReceived(payload : ChatProps) {
             console.log(payload);
-            setChats([payload.payload, ...chats])
+            setChats([payload, ...chats])
         }
+
         // Subscribe to the Channel
         myChannel
             .on(
                 'broadcast',
                 { event: 'shout' }, // Listen for "shout". Can be "*" to listen to all events
-                (payload) => messageReceived(payload)
+                (msg) => {
+                    if (msg.payload.event === 'queuedMessages'){
+                        console.log('Recieved queued messages : ' ,msg.payload.data)
+                        if (msg.payload.data?.length > 0)
+                            msg.payload.data.map((m: Tables<'messages'>) => handleNewMessage(m))
+                    }
+                    else if (msg.payload.event === 'newChat')
+                        onNewChatReceived(msg.payload.data);
+                }
             )
-            .subscribe()
+            .subscribe();
 
+        const channel = supabase.channel('online-users', {
+            config: {
+                presence: {
+                    key: props.user.id
+                },
+            },
+        });
+        
+        channel.on('presence', { event: 'sync' }, () => {
+            const presentState = channel.presenceState()
+            console.log('inside presence: ', presentState);
+            const tempSet = new Set(onlineUsers);
+            Object.keys(presentState).map((id) => {
+                tempSet.add(id);
+            });
+
+            setOnlineUsers(tempSet);
+        });
+        
+        console.log('registering New users have joined callback');
+        channel.on('presence', { event: 'join' }, ({ newPresences }) => {
+            console.log('New users have joined: ', newPresences);
+            const tempSet = new Set(onlineUsers);
+            newPresences.map((presence) => tempSet.add(presence.user_name));
+            setOnlineUsers(tempSet);
+        })
+
+        channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
+            console.log('users have left: ', leftPresences);
+            const tempSet = new Set(onlineUsers);
+            leftPresences.map((presence) => tempSet.delete(presence.user_name));
+            setOnlineUsers(tempSet);
+        });
+    
+        channel.subscribe(async (status) => {
+            if (status === 'SUBSCRIBED') {
+                const status = await channel.track({
+                    userId: props.user.id
+                })
+                console.log('status: ', status)
+            }
+        });
+          
         return () => {
             myChannel.unsubscribe();
+            channel.untrack();
+            channel.unsubscribe();
         };
-    },[])
+    },[supabase])
 
 
     const updateChats = (chat:ChatProps) => {
@@ -199,6 +253,7 @@ export function ChatWrapper(props : ChatWrapperProps) {
                     handleChatSelection={handleClick} 
                     user={props.user}
                     chatState={chatState}
+                    onlineUsers={onlineUsers}
                 />
 
                 <MessagesWrapper 

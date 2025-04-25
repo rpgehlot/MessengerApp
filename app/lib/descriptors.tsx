@@ -105,6 +105,7 @@ export interface ISidebarProps {
     handleChatSelection  : (chat: ChatProps) => void;
     user : User;
     chatState : {[chatId : number] : ChatState};
+    onlineUsers : Set<string>;
 }
 
 export interface IMessagesWrapper {
@@ -136,7 +137,6 @@ export interface IProfileSectionProps {
 export interface ICreateNewChatProps {
     children? : React.ReactNode
     setChatMenuOpenState : (x : boolean) => void;
-    user : User;
 }
 
 export interface ICreateNewGroupChatProps {

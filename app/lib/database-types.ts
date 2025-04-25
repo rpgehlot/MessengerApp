@@ -97,6 +97,7 @@ export type Database = {
           entry_id: number
           message_id: number
           sender_id: string
+          status: Database["public"]["Enums"]["messagestatus"]
         }
         Insert: {
           channel_id: number
@@ -105,6 +106,7 @@ export type Database = {
           entry_id?: number
           message_id: number
           sender_id: string
+          status?: Database["public"]["Enums"]["messagestatus"]
         }
         Update: {
           channel_id?: number
@@ -113,6 +115,7 @@ export type Database = {
           entry_id?: number
           message_id?: number
           sender_id?: string
+          status?: Database["public"]["Enums"]["messagestatus"]
         }
         Relationships: [
           {
@@ -209,12 +212,18 @@ export type Database = {
       insert_message_and_update_sequence: {
         Args: { p_channel_id: number; p_content: string; p_sender_id: string }
         Returns: {
+          channel_id: number
+          content: string
+          created_at: string
+          entry_id: number
           message_id: number
-        }[]
+          sender_id: string
+          status: Database["public"]["Enums"]["messagestatus"]
+        }
       }
     }
     Enums: {
-      [_ in never]: never
+      messagestatus: "queued" | "delievered" | "read"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -329,7 +338,9 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      messagestatus: ["queued", "delievered", "read"],
+    },
   },
 } as const
 

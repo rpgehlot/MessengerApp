@@ -5,6 +5,7 @@ import { UserCircleIcon } from '@heroicons/react/16/solid';
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import clsx from 'clsx';
 import { fetchAllChats } from '../lib/data';
+import * as onlinePresence from  '@/app/lib/onlinePresence';
 
 export default async function Chats() {
   

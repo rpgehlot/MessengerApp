@@ -26,7 +26,7 @@ export async function GET(request: NextRequest) {
             `)
             .eq('channel_id', channelId)
             .lte('message_id', lastMessageId)
-            .order('created_at',{ ascending : true})
+            .order('created_at',{ ascending : false})
             .limit(50)
 
     
@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
         throw new Error('Error fetching messages');
     }
     
-    const data = messages.map((entry) => {
+    const data = messages.reverse().map((entry) => {
         return {
             messageId : entry.message_id,
             createdAt : entry.created_at,

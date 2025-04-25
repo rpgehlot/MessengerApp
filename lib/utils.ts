@@ -17,16 +17,23 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 
-export const formatDate = (date : string) => {
-  const today = moment.utc();
-  const messageDate = moment.utc(date);
+export const formatDate = (date : string, groupMessagesByDate = false) => {
+  const today = moment.utc().startOf('day');
+  const messageDate = moment.utc(date).startOf('day');;
 
   const daysDiff = today.diff(messageDate,'days');
   if (daysDiff === 0)
-      return 'TODAY';
+      return groupMessagesByDate ? 'TODAY' : moment.utc(date).local().format('LT');
   if (daysDiff === 1)
-    return 'YESTERDAY';
+    return groupMessagesByDate ? 'YESTERDAY' : 'Yesterday';
   else if (daysDiff >= 7 )
-      return moment.utc(date).local().format('DD/MM/YYYY');
-  else return dayMapping[moment.utc(date).local().day()];
+      return messageDate.format('DD/MM/YYYY');
+  else return dayMapping[messageDate.day()];
 };
+
+export const formatDateToLocal = (date:string) => {
+  return moment.utc(date).local().format('LT');
+};
+
+
+export const REDIS_QUEUED_MESSAGE_PREFIX = 'messages_queue_';
