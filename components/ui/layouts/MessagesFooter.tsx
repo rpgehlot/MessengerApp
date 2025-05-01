@@ -4,23 +4,27 @@ import useOutsideClick from "@/lib/utils/hooks/useOutsideClick";
 import { FaceSmileIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { EmojiClickData } from "emoji-picker-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useContext, useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Input } from "../input";
-import { ChatAppContext } from "./chatWrapper";
+import { ChatAppContext, WebSocketContext } from "./chatWrapper";
 
+let timer: ReturnType<typeof setTimeout>;
 export default function MessagesFooter({ 
         handleChatSelection, 
         selectedChat, 
         messageSelectionEnabled, 
         setMessageSelectionEnabled,
         selectedMessages,
+        onNewMessageEntered
     } : IMessagesFooterProps ) 
 {
 
     const [message, setMessage] = useState<string>('');
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState<boolean>(false);
-    const chatContext = useContext(ChatAppContext)
+    const [isTyping, setIsTyping] = useState<boolean>(false);
 
+    const chatContext = useContext(ChatAppContext);
+    const webSocketContext = useContext(WebSocketContext);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -30,6 +34,53 @@ export default function MessagesFooter({
         console.log('clicked outside of emoji picker')
         setIsEmojiPickerOpen(false);        
     });
+
+    useEffect(() => {
+        
+        function onKeyPress() {
+            clearTimeout(timer);
+            if (!isTyping) {
+                setIsTyping(true);
+                console.log('typing start...');
+                webSocketContext?.current.send(JSON.stringify({
+                    event : 'typing-start',
+                    payload : {
+                        topic : chatContext.selectedChat?.chatName,
+                        channel_id :chatContext.selectedChat?.chatId,
+                        members : chatContext.selectedChat?.members.map(u => u.userId),
+                        userId : chatContext.user.id
+                    }
+                }));
+            }
+        }
+
+        function onKeyUp() {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                console.log('typing end');
+                setIsTyping(false);
+                webSocketContext?.current.send(JSON.stringify({
+                    event : 'typing-end',
+                    payload : {
+                        topic : chatContext.selectedChat?.chatName,
+                        channel_id :chatContext.selectedChat?.chatId,
+                        members : chatContext.selectedChat?.members.map(u => u.userId),
+                        userId : chatContext.user.id
+                    }
+                }));
+            },300);
+        }
+
+        inputRef.current?.addEventListener('keypress', onKeyPress);
+        inputRef.current?.addEventListener('keyup', onKeyUp);
+
+        return () => {
+            inputRef.current?.removeEventListener('keypress', onKeyPress);
+            inputRef.current?.removeEventListener('keyup', onKeyUp);
+        };
+
+    },[inputRef.current, isTyping, chatContext.selectedChat]);
+
 
     const onEmojiClick = (emoijiData : EmojiClickData) => {
         if (!inputRef.current) return
@@ -50,7 +101,10 @@ export default function MessagesFooter({
 
     const onMessageEntered = async (e:any) => {
         e.preventDefault();
-        console.log('onMessageEntered selectedChat : ',selectedChat)
+
+        if(!message)
+            return;
+
         let chatId = selectedChat.chatId;
         if (selectedChat.newChat) {
             const respone = await fetch('/api/channels/create',{ 
@@ -86,6 +140,7 @@ export default function MessagesFooter({
         });
         
         setMessage('');
+        onNewMessageEntered();
     };
 
     return (

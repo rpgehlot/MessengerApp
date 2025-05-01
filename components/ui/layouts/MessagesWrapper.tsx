@@ -1,20 +1,32 @@
 import { IMessagesWrapper, Message as MessageDescriptor, MessageBlock } from "@/app/lib/descriptors";
-import { useEffect, useRef, useState } from "react";
+import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Message } from "../custom/MessageBlock";
 import MessagesHeader from "./MessagesHeader";
 import MessagesFooter from "./MessagesFooter";
 import moment from "moment";
 import { formatDate } from "@/lib/utils";
+import { ChatAppContext } from "./chatWrapper";
+import { clsx } from "clsx";
+import { useDebouncedCallback } from "use-debounce";
 
-export default function MessagesWrapper({ selectedChat, user, messages, handleChatSelection } : IMessagesWrapper){
+export default function MessagesWrapper({ selectedChat, user, messages = [], handleChatSelection } : IMessagesWrapper){
 
     
     const messagesContainerRef = useRef<HTMLDivElement>(null);
     const [messageSelectionEnabled, setMessageSelectionEnabled ] = useState<boolean>(false);
+    const [firstRender, setFirstRender] = useState<boolean>(true);
     const [selectedMessages, setSelectedMessages] = useState<MessageBlock[]>([]);
     const [renderableMessageNodes, setRenderableMessageNodes] = useState<(MessageDescriptor | string)[]>([]);
-    
+    const chatContext = useContext(ChatAppContext);
+    const messagesEndRef = useRef<HTMLDivElement | null>(null);
+    const scrollHeightBefore = useRef(0);
+
+    const oldestMessageId = useRef(-10);
+
     useEffect(() => {
+        if (messages.length === 0)
+            return;
+
         const map : {[s : string ] : boolean} = {};
         const list : (MessageDescriptor | string)[] = [];
         messages.forEach((m) => {
@@ -27,13 +39,66 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
         });
 
         setRenderableMessageNodes(list);
+
+    
     },[messages]);
+
+    useLayoutEffect(() => {
+        
+        console.log('scrolling to bottom');
+        console.log('messagesEndRef.current : ',messagesEndRef.current);
+        if (firstRender) {
+            messagesEndRef.current?.scrollIntoView({
+                block: 'start',
+                behavior: 'smooth',
+            });
+
+            return;
+        }
+
+        if (messagesContainerRef.current) {
+            const scrollHeightAfter = messagesContainerRef.current?.scrollHeight;
+            // messagesContainerRef.current.scrollTop = scrollHeightAfter - scrollHeightBefore.current;
+            messagesContainerRef.current.scrollTo({
+                top : scrollHeightAfter - scrollHeightBefore.current,
+                behavior : 'auto'
+            });
+
+        }
+
+    },[renderableMessageNodes]);
     
     useEffect(() => {
         setSelectedMessages([]);
         setMessageSelectionEnabled(false);
     },[selectedChat?.chatId]);
     
+    const membersSet = new Set([...(selectedChat?.members || []).map(m => m.userId)]);
+    const isSomeUserTyping = chatContext.typingUsers?.find((entry) => {
+        return entry.channel_id === selectedChat?.chatId && membersSet.has(entry.userId)
+    });
+
+    const handleScroll = useDebouncedCallback(async () => {
+        if (messagesContainerRef.current && selectedChat) {
+    
+            const lastMessageId = messages[0].messageId;
+            const { scrollTop } = messagesContainerRef.current;
+            console.log('scrollTop : ',scrollTop);
+
+            if (scrollTop <= 10 && lastMessageId > oldestMessageId.current) {
+                const respone = await fetch(`/api/messages?channelId=${selectedChat?.chatId}&lastMessageId=${lastMessageId}`);
+                const { data } = await respone.json();
+
+                if (data.length === 0)
+                    oldestMessageId.current = lastMessageId;
+
+                scrollHeightBefore.current = messagesContainerRef.current?.scrollHeight || 0;
+                chatContext.updateMessages(selectedChat.chatId, data);
+                setFirstRender(false);
+            }
+        }
+    },500);
+
     return (
         <div className='flex flex-col grow relative'>
             {!selectedChat && (
@@ -57,7 +122,7 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
                         setMessageSelectionEnabled={setMessageSelectionEnabled}
                     />
 
-                    <div ref={messagesContainerRef} className="textChatArea grow  h-px overflow-auto">
+                    <div ref={messagesContainerRef} onScroll={handleScroll} className="textChatArea grow h-px overflow-auto">
                         <div style={{'overflowAnchor' : 'none'}} className="min-h-[12px] grow"></div>
                         {renderableMessageNodes?.map((message, i) => {
                             if (typeof message === 'string') {
@@ -79,7 +144,7 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
                                     loggedInUserId={user.id}
                                     messageId={message.messageId}
                                     media={message.media}
-                                    read={message.read}
+                                    status={message.status}
                                     messageSelectionEnabled={messageSelectionEnabled}
                                     onMessageSelectionChange={(message, checked) => {
                                         console.log(message,checked)
@@ -99,7 +164,8 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
                                 />
                             )
                         })}
-                        <div style={{'overflowAnchor' : 'auto'}} id="anchor" className="h-px"></div>
+                        <span style={{'overflowAnchor' : 'auto'}}  className={clsx('ml-3 text-xs',isSomeUserTyping ? 'opacity-100' : 'opacity-0')}> {isSomeUserTyping?.topic} is typing...</span>
+                        <div ref={messagesEndRef} style={{'overflowAnchor' : 'auto'}} id="anchor" className="h-px"></div>
                     </div>
 
                     <MessagesFooter 
@@ -108,6 +174,10 @@ export default function MessagesWrapper({ selectedChat, user, messages, handleCh
                         messageSelectionEnabled={messageSelectionEnabled}
                         setMessageSelectionEnabled={setMessageSelectionEnabled}
                         selectedMessages={selectedMessages}
+                        onNewMessageEntered={() => {
+                            if (messagesContainerRef.current)
+                                scrollHeightBefore.current = 0;
+                        }}
                     />
                 </>
             )}

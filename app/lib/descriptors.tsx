@@ -1,4 +1,22 @@
 import { User } from "@supabase/supabase-js";
+import { Enums, Tables } from "./database-types";
+
+export type Message = {
+    content? : string;
+    createdAt : string;
+    messageId : number;
+    status : Enums<'messagestatus'>;
+    sender : {
+        avatarUrl : string;
+        email : string;
+        id : string;
+        name : string;
+    };
+    media? : {
+        type : 'audio' | 'video' | 'image',
+        url : string;
+    };
+};
 
 
 export interface ChatProps {
@@ -11,13 +29,7 @@ export interface ChatProps {
         avatarUrl? : string;
     }>;
     isOnline : boolean;
-    latestMessage? : {
-        content : string;
-        createdAt : string;
-        senderId : string;
-        read:boolean;
-        messageId : number;
-    }
+    latestMessage? : Message
     avatarUrl? : string;
     description? :string;
     username? : string;
@@ -45,7 +57,7 @@ export interface MessageBlock {
         type : 'audio' | 'video' | 'image',
         url : string;
     };
-    read : boolean;
+    status : Enums<'messagestatus'>;
     loggedInUserId : string;
     displayName : boolean;
     messageSelectionEnabled : boolean;
@@ -61,35 +73,14 @@ export interface IsTypingMessage {
     };
 }
 
-export type Message = {
-    content? : string;
-    createdAt : string;
-    messageId : number;
-    read : boolean;
-    sender : {
-        avatarUrl : string;
-        email : string;
-        id : string;
-        name : string;
-    };
-    media? : {
-        type : 'audio' | 'video' | 'image',
-        url : string;
-    };
-};
 
 
 
 export type ChatState = {
     visited :  boolean;
-    latestMessage?  : {
-        content : string;
-        createdAt : string;
-        senderId : string;
-        read:boolean;
-        messageId : number;
-    };
+    latestMessage? : Message;
     messages : Message[];
+    unreadMessagesCount : number;
 };
 
 export enum ChatCategory {
@@ -127,6 +118,7 @@ export interface IMessagesFooterProps {
     setMessageSelectionEnabled : (v : boolean) => void;
     messageSelectionEnabled : boolean;
     selectedMessages : MessageBlock[];
+    onNewMessageEntered : () => void;
 }
 
 export interface IProfileSectionProps {

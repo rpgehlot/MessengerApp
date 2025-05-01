@@ -3,22 +3,34 @@
 import moment from "moment";
 import { ChatProps } from "@/app/lib/descriptors";
 import clsx from "clsx";
-import { useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox"
 import { formatDate } from '@/lib/utils'
+import { ChatAppContext } from "../layouts/chatWrapper";
 
 export function AvatarRow(
-    { chatId, chatName, latestMessage, avatarUrl, isOnline, isGroupChat, user, chatSelectionEnabled, unreadMessagesCount: x, onClick} : ChatProps
+    { chatId, chatName, latestMessage, avatarUrl, isOnline, isGroupChat, user, chatSelectionEnabled, members,  unreadMessagesCount: x, onClick} : ChatProps
 ) {
-    const sentByMe = latestMessage?.senderId === user.id;
-    const [unReadMessagesState, setUnReadMessagesState]= useState<boolean>(!!latestMessage?.read);
+    const sentByMe = latestMessage?.sender.id === user.id;
+    const [unReadMessagesState, setUnReadMessagesState]= useState<boolean>(latestMessage?.status !== 'read');
     const [unreadMessagesCount, setUnreadMessagesCount]= useState<number>(x);
+    const chatContext = useContext(ChatAppContext);
+
+    useEffect(() => {
+        setUnreadMessagesCount(x);
+        setUnReadMessagesState(latestMessage?.status !=='read')
+    },[x, latestMessage]);
+
+    const membersSet = new Set([...members.map(m => m.userId)]);
+    const isSomeUserTyping = chatContext.typingUsers?.find((entry) => {
+        return entry.channel_id === chatId && membersSet.has(entry.userId) && chatContext.selectedChat?.chatId != chatId
+    });
 
     return (
         <div 
-            className={clsx("flex items-center justify-start p-2 pb-0 pt-0 cursor-pointer rounded-sm hover:bg-secondary-foreground/10 relative mb-0.5 min-h-18", (!sentByMe && !unReadMessagesState) ? 'bg-[#ffc0cb45]' : '')}
+            className={clsx("flex items-center justify-start p-2 pb-0 pt-0 cursor-pointer rounded-sm hover:bg-secondary-foreground/10 relative mb-0.5 min-h-18", (!sentByMe && unReadMessagesState) ? 'bg-[#ffc0cb45]' : '')}
             onClick={() => {
-                setUnReadMessagesState(true);
+                setUnReadMessagesState(false);
                 setUnreadMessagesCount(0);
                 onClick?.();
              }}
@@ -38,7 +50,8 @@ export function AvatarRow(
                     </span>
                 </div>
                 <div className="font-light text-sm text-secondary-foreground line-clamp-1">
-                    {latestMessage?.content}
+                    {isSomeUserTyping && <span className="text-xs">{isSomeUserTyping.topic} is typing...</span>}
+                    {!isSomeUserTyping && latestMessage?.content}
                 </div>
             </div>
 

@@ -22,10 +22,11 @@ export async function GET(request: NextRequest) {
                     )
                 ),
                 created_at,
-                content
+                content,
+                status
             `)
             .eq('channel_id', channelId)
-            .lte('message_id', lastMessageId)
+            .lt('message_id', lastMessageId)
             .order('created_at',{ ascending : false})
             .limit(50)
 
@@ -46,7 +47,7 @@ export async function GET(request: NextRequest) {
                 email: entry.users.email,
                 avatarUrl: entry.users.users_metadata?.avatar_url,
             },
-            read: true
+            status : entry.status
         }
     });
 

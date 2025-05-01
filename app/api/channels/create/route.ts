@@ -170,12 +170,27 @@ export async function POST(request: Request) {
         });
 
         const { data : latestMessage, error : messageFail } = await supabase.from('messages')
-            .select(`channel_id, message_id, sender_id, content, created_at`)
+            .select(`
+                message_id, 
+                users(
+                    email,
+                    users_metadata(
+                        first_name,
+                        last_name,
+                        avatar_url,
+                        user_id
+                    )
+                ),
+                created_at,
+                content,
+                status    
+            `)
             .eq('channel_id', channelId)
             .order('created_at', { ascending: false}).single();
         
         if(messageFail)
             throw new Error(`Error fetching latest message for a chatId : ${channelId}`);
+
 
         console.log(otherUser)
         if (otherUser.length === 1) {
@@ -184,12 +199,17 @@ export async function POST(request: Request) {
                 chatName : `${otherUser[0].users.users_metadata?.first_name} ${otherUser[0].users.users_metadata?.last_name}`,
                 isGroupChat : channel.is_group,
                 isOnline : !!otherUser[0].users.users_metadata?.is_online,
-                latestMessage : {
-                    senderId:  latestMessage.sender_id,
-                    createdAt : latestMessage.created_at,
-                    read : false,
-                    content : latestMessage.content,
-                    messageId : latestMessage.message_id
+                latestMessage :  {
+                        messageId : latestMessage.message_id,
+                        createdAt : latestMessage.created_at,
+                        content : latestMessage.content,
+                        sender : {
+                            name : `${latestMessage.users.users_metadata?.first_name} ${latestMessage.users.users_metadata?.last_name}`,
+                            id : latestMessage.users.users_metadata?.user_id!!,
+                            email: latestMessage.users.email,
+                            avatarUrl: latestMessage.users.users_metadata?.avatar_url!!,
+                        },
+                        status : latestMessage.status
                 },
                 avatarUrl : otherUser[0].users.users_metadata?.avatar_url ?? undefined,
                 description : otherUser[0].users.users_metadata?.bio,

@@ -29,7 +29,7 @@ export default function  Sidebar( { chats, selectedChat, user, chatState, online
             const lowerCasedName = chat.chatName.toLowerCase();
             return (
                 lowerCasedName.includes(searchQuery) ||
-                chat.latestMessage?.content.toLowerCase().includes(searchQuery)
+                chat.latestMessage?.content?.toLowerCase().includes(searchQuery)
             )
         }).sort((a,b) => {
             if (a.latestMessage && b.latestMessage)
@@ -61,7 +61,7 @@ export default function  Sidebar( { chats, selectedChat, user, chatState, online
             const lowerCasedName = chat.chatName.toLowerCase();
             return (
                 lowerCasedName.includes(searchQuery) ||
-                chat.latestMessage?.content.toLowerCase().includes(searchQuery)
+                chat.latestMessage?.content?.toLowerCase().includes(searchQuery)
             )
         });
 
@@ -165,8 +165,9 @@ export default function  Sidebar( { chats, selectedChat, user, chatState, online
                                     return;
                                 handleChatSelection(chat) 
                             }}
-                            messages={chat.messages}
-                            unreadMessagesCount={chat.unreadMessagesCount}
+                            members={chat.members}
+                            // messages={chat.messages}
+                            unreadMessagesCount={chatState[chat.chatId]?.unreadMessagesCount}
                             chatSelectionEnabled={chatSelectionEnabled}
                             user={user}
                         />

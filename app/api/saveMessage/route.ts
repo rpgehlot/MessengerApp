@@ -1,7 +1,5 @@
 import { createClient } from '@/utils/supabase/server'
 import { redis } from '@/utils/redis';
-import { getOnlineUsers } from  '@/app/lib/onlinePresence';
-
 import { Tables } from '@/app/lib/database-types';
 import { REDIS_QUEUED_MESSAGE_PREFIX } from '@/lib/utils';
 
@@ -32,10 +30,12 @@ export async function POST(request: Request) {
     const t2 = new Date().getTime();
 
     console.log('time elapsed in db call : ',(t2 - t0), 'ms');
-    const onlineUsers = getOnlineUsers();
-    console.log('onlineUsers: ', onlineUsers);
+    const onlineUsersList:Array<string> = await redis.get('online-users') || [];
 
-    const { data: channelUsers, error : channelUsersError} = await supabase.from('channel_user_mapping').select(`user_id`).eq('channel_id',channelId);
+    console.log('onlineUsers: ', onlineUsersList);
+
+    const onlineUsers = new Set([...onlineUsersList]);
+    const { data: channelUsers, error : channelUsersError} = await supabase.from('channel_user_mapping').select(`user_id`).eq('channel_id',channelId).neq('user_id',senderId);
     if (channelUsersError) 
         throw new Error(`Error fetching users for a channel - ${channelId}`);
 
@@ -49,6 +49,11 @@ export async function POST(request: Request) {
             queue = queue || [];
             queue.push(data)
             await redis.set(key, queue);
+        }
+        else {
+            await supabase.from('messages').update({
+                status : 'delievered'
+            }).eq('entry_id',data.entry_id);
         }
     }
 

@@ -1,21 +1,24 @@
 'use client';
 
 import { ChatProps, ChatState, Message } from "@/app/lib/descriptors";
-import { useEffect, useState, createContext } from "react";
+import { useEffect, useState, createContext, useCallback, MutableRefObject } from "react";
 import Sidebar from "./Sidebar";
 import MessagesWrapper from "./MessagesWrapper";
 import { createClient } from "@/utils/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { Tables } from "@/app/lib/database-types";
-  
+import { Tables, Enums } from "@/app/lib/database-types";
+import { useWebSocket } from "@/lib/utils/hooks/useWebSocket";
+
 type ChatWrapperProps = {
     chats : ChatProps[];
     user: User;
 };
 
 const supabase = createClient();
+const pendingUpdates: Map<number, Tables<'messages'>> = new Map();
 
 export const ChatAppContext = createContext<any>(null);
+export const WebSocketContext = createContext<MutableRefObject<WebSocket | null> | null>(null);
 
 export function ChatWrapper(props : ChatWrapperProps) {
     const [selectedChat, setSelectedChat] = useState<ChatProps | null>(null);
@@ -23,8 +26,77 @@ export function ChatWrapper(props : ChatWrapperProps) {
     const [chatState, setChatState] = useState<{[chatId : number] : ChatState}>({});
     const [chats, setChats] = useState<ChatProps[]>(props.chats);
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set([]));
+    const [typingUsers , setTypingUsers] = useState<{
+        channelId : number;
+        userId : string;
+    }[]>([]);
+    const handleWsMessage = useCallback((event: string, payload : any) => {
+
+
+        if( event === 'auth-success') {
+            console.log('auth-success : ',payload)
+
+            const tempSet = new Set([...payload]);
+            setOnlineUsers(tempSet);
+
+            socket.current?.send(JSON.stringify({
+                event : 'subscribe',
+                payload: { topics : ['online-users'] }
+            }));
+
+            socket.current?.send(JSON.stringify({
+                event : 'queued-messages',
+            }));
+
+        }
+        else if (event === 'userjoined') {
+            console.log('userjoined : ',payload);
+            setOnlineUsers((prev) => new Set(prev).add(payload.userid));
+        }
+        else if (event === 'userleft') {
+            console.log('userleft : ',payload);
+            setOnlineUsers((prev) => {
+                const next = new Set(prev);
+                next.delete(payload.userid);
+                return next;
+            });
+        } 
+        else if (event === 'queued-messages') {
+            console.log('Recieved queued messages : ' ,payload)
+            if (payload?.length > 0)
+                payload.map((m: Tables<'messages'>) => handleNewMessage(m))
+        }
+        else if (event === 'typing-start') {
+            console.log(event, payload);
+            setTypingUsers((typingUsers) => {
+                const found = typingUsers.find((entry) => entry.channelId === payload.channel_id && entry.userId === payload.userId);
+                if (found)
+                    return typingUsers;
+                return [...typingUsers, {...payload, channelId : payload.channel_id}];
+            });
+        }
+        else if (event === 'typing-end') {
+            console.log(event, payload);
+            setTypingUsers((typingUsers) => {
+                const clonedTypingUsers = [...typingUsers.map(u => { return {...u} } )];
+                const foundIndex = clonedTypingUsers.findIndex((entry) => entry.channelId === payload.channel_id && entry.userId === payload.userId);
+                if (foundIndex >= 0)
+                    clonedTypingUsers.splice(foundIndex,1);
+                return clonedTypingUsers;
+            });
+        }
+        
+    },[]);
+
+    const { socket } = useWebSocket({
+        wsurl : 'https://vxvgrflvqvvmbikszhbd.supabase.co/functions/v1/onlineUsers',
+        onWsMessage : handleWsMessage,
+        user : props.user
+    });
+
 
     const handleNewMessage = async (newMessage : Tables<'messages'>) => {
+        console.log('selectedchat : ',selectedChat);
         const { data: sender, error } = await supabase
             .from("users")
             .select(`
@@ -44,33 +116,112 @@ export function ChatWrapper(props : ChatWrapperProps) {
             return;
         }
 
-        
         setChatState((s) => {
             const data =  s[newMessage.channel_id] || { visited : false, messages : [] };
+
+            let status = newMessage.status;
+            if(pendingUpdates.has(newMessage.entry_id)) {
+                const queuedUpdate = pendingUpdates.get(newMessage.entry_id) as Tables<'messages'>;
+                status = queuedUpdate.status;
+                pendingUpdates.delete(newMessage.entry_id);
+            }
+
+            const newMessageObject:Message = {
+                content : newMessage.content,
+                createdAt : newMessage.created_at,
+                messageId : newMessage.message_id,
+                status,
+                sender : {
+                    avatarUrl : sender?.users_metadata?.avatar_url ?? '',
+                    email : sender?.email,
+                    id : sender?.id,
+                    name : `${sender?.users_metadata?.first_name} ${sender?.users_metadata?.last_name}`
+                }
+            };
 
             return {
                 ...s,
                 [newMessage.channel_id] : {
                     ...data,
                     latestMessage : {
-                        content : newMessage.content,
-                        messageId : newMessage.message_id,
-                        createdAt : newMessage.created_at,
-                        read : true,
-                        senderId : newMessage.sender_id
+                        ...newMessageObject
                     },
-                    messages : [...data.messages, {
-                        content : newMessage.content,
-                        createdAt : newMessage.created_at,
-                        messageId : newMessage.message_id,
-                        read: true,
-                        sender : {
-                            avatarUrl : sender?.users_metadata?.avatar_url ?? '',
-                            email : sender?.email,
-                            id : sender?.id,
-                            name : `${sender?.users_metadata?.first_name} ${sender?.users_metadata?.last_name}`
+                    messages : [...data.messages, {...newMessageObject}],
+                    unreadMessagesCount : (newMessage.channel_id !== selectedChat?.chatId && newMessage.sender_id !== props.user.id) ? (data.unreadMessagesCount + 1) : data.unreadMessagesCount
+                }
+            }
+        });
+
+        // when a new message arrives in the selected chat for a user, mark the message as read.
+        if (selectedChat?.chatId === newMessage.channel_id  && newMessage.sender_id != props.user.id) {
+            console.log('marking the message as read : ',selectedChat, newMessage)
+            try {
+                await fetch('/api/messages/mark-read',{ 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        channelId: selectedChat.chatId,
+                        senderId : props.user.id
+                    }),
+                });
+            } catch(e){
+
+            }
+        }
+    };
+
+    const handleMessageUpdate = async(old : {[key: string]: any} , newobj : {[key: string]: any}) => {
+        
+        const oldPayload = old as Tables<'messages'>;
+        const newPayload = newobj as Tables<'messages'>;
+
+        if (oldPayload.status !== newPayload.status) {
+            setChatState((s) => {
+                const data =  s[newPayload.channel_id] || { visited : false, messages : [] };
+                
+                const msgIndex = data.messages.findIndex(m => m.messageId === newPayload.message_id);
+                if (msgIndex >= 0 ) {
+                    const newList = [...data.messages];
+                    newList[msgIndex] = {
+                        ...data.messages[msgIndex],
+                        status : newPayload.status
+                    };
+
+                    return {
+                        ...s,
+                        [newPayload.channel_id] : {
+                            ...data,
+                            messages : newList
                         }
-                    }]
+                    }
+                }
+                else {
+                    pendingUpdates.set(newPayload.entry_id, newPayload);
+                }
+
+                return {
+                    ...s,
+                    [newPayload.channel_id] : {
+                        ...data,
+                    }
+                }
+            });
+        }
+    };
+
+    const updateMessages = (chatId : number, newMessages : Message[]) => {
+        setChatState((s) => {
+            const curr = s[chatId] || { messages : []};
+            return {
+                ...s,
+                [chatId] : {
+                    ...curr,
+                    messages : [
+                        ...newMessages,                 
+                        ...curr.messages
+                    ]
                 }
             }
         });
@@ -83,48 +234,92 @@ export function ChatWrapper(props : ChatWrapperProps) {
             return;
 
         const channel = supabase.channel('realtime_changes').on('postgres_changes',{
-            event : 'INSERT',
+            event : '*',
             schema : 'public',
             table : 'messages',
             filter: `channel_id=in.(${chatIds.join(',')})`
         },async (payload) => {
-            const newMessage = payload.new as Tables<'messages'>;
-            handleNewMessage(newMessage);
+            if (payload.eventType === 'INSERT'){
+                const newMessage = payload.new as Tables<'messages'>;
+                handleNewMessage(newMessage);
+            }
+            else if (payload.eventType === 'UPDATE') {
+                handleMessageUpdate(payload.old, payload.new);
+            }
+
         }).subscribe();
+        
+
 
         return () => {
             supabase.removeChannel(channel);
+            // supabase.removeChannel(updateListner);
         };
-    },[chats, supabase, chatState, setChatState]);
+    },[chats, supabase, selectedChat, setSelectedChat]);
 
     const handleClick = async (chat : ChatProps | null) => {
 
         console.log('chat : ',chat)
         setSelectedChat(chat);
 
-        if (chat === null || !chatState[chat.chatId] || !chatState[chat.chatId].latestMessage || chatState[chat.chatId].visited)
+        if (chat === null || !chatState[chat.chatId] || !chatState[chat.chatId].latestMessage)
             return;
+            
+        if (chatState[chat?.chatId].unreadMessagesCount > 0) {
 
-        try {
-            const res = await fetch(`/api/messages?channelId=${chat.chatId}&lastMessageId=${chatState[chat.chatId].latestMessage?.messageId}`);
-            const { data } = await res.json();
-            console.log('Received data:', data);
+            try {
+                await fetch('/api/messages/mark-read',{ 
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        channelId: chat.chatId,
+                        senderId : props.user.id
+                    }),
+                });
+            } catch(e){
+
+            }
 
             setChatState((s) => {
                 const curr = s[chat.chatId] || {};
                 return {
                     ...s,
                     [chat.chatId] : {
-                        visited : true,
-                        latestMessage : curr.latestMessage ? {...curr.latestMessage} : undefined,
-                        messages : [ ...data]
+                        ...curr,
+                        unreadMessagesCount : 0,
                     }
                 }
             });
-
-        }catch(error) {
-            console.error('Fetch error:', error);
         }
+       
+
+        if(!chatState[chat.chatId].visited) {
+            try {
+                const res = await fetch(`/api/messages?channelId=${chat.chatId}&lastMessageId=${chatState[chat.chatId].latestMessage?.messageId}`);
+                const { data } = await res.json();
+                console.log('Received data:', data);
+
+                setChatState((s) => {
+                    const curr = s[chat.chatId] || {};
+                    return {
+                        ...s,
+                        [chat.chatId] : {
+                            ...curr,
+                            visited : true,
+                            latestMessage : curr.latestMessage ? {...curr.latestMessage} : undefined,
+                            messages : [...data, ...curr.messages],
+                            unreadMessagesCount : 0
+                        }
+                    }
+                });
+
+            } catch(error) {
+                console.error('Fetch error:', error);
+            }
+        }
+       
     };
 
     useEffect(() => {
@@ -138,13 +333,16 @@ export function ChatWrapper(props : ChatWrapperProps) {
                     [chat.chatId] : {
                         visited : false,
                         latestMessage : chat.latestMessage ? {...chat.latestMessage} : undefined,
-                        messages : [],
+                        messages : chat.latestMessage ? [{...chat.latestMessage}] : [],
+                        unreadMessagesCount : chat.unreadMessagesCount
                     }
                 }
             })
         });
 
     },[props.chats]);
+
+
 
     useEffect(() => {
 
@@ -162,66 +360,16 @@ export function ChatWrapper(props : ChatWrapperProps) {
                 'broadcast',
                 { event: 'shout' }, // Listen for "shout". Can be "*" to listen to all events
                 (msg) => {
-                    if (msg.payload.event === 'queuedMessages'){
-                        console.log('Recieved queued messages : ' ,msg.payload.data)
-                        if (msg.payload.data?.length > 0)
-                            msg.payload.data.map((m: Tables<'messages'>) => handleNewMessage(m))
-                    }
-                    else if (msg.payload.event === 'newChat')
+                   if (msg.payload.event === 'newChat')
                         onNewChatReceived(msg.payload.data);
                 }
             )
             .subscribe();
 
-        const channel = supabase.channel('online-users', {
-            config: {
-                presence: {
-                    key: props.user.id
-                },
-            },
-        });
-        
-        channel.on('presence', { event: 'sync' }, () => {
-            const presentState = channel.presenceState()
-            console.log('inside presence: ', presentState);
-            const tempSet = new Set(onlineUsers);
-            Object.keys(presentState).map((id) => {
-                tempSet.add(id);
-            });
-
-            setOnlineUsers(tempSet);
-        });
-        
-        console.log('registering New users have joined callback');
-        channel.on('presence', { event: 'join' }, ({ newPresences }) => {
-            console.log('New users have joined: ', newPresences);
-            const tempSet = new Set(onlineUsers);
-            newPresences.map((presence) => tempSet.add(presence.user_name));
-            setOnlineUsers(tempSet);
-        })
-
-        channel.on('presence', { event: 'leave' }, ({ leftPresences }) => {
-            console.log('users have left: ', leftPresences);
-            const tempSet = new Set(onlineUsers);
-            leftPresences.map((presence) => tempSet.delete(presence.user_name));
-            setOnlineUsers(tempSet);
-        });
-    
-        channel.subscribe(async (status) => {
-            if (status === 'SUBSCRIBED') {
-                const status = await channel.track({
-                    userId: props.user.id
-                })
-                console.log('status: ', status)
-            }
-        });
-          
         return () => {
             myChannel.unsubscribe();
-            channel.untrack();
-            channel.unsubscribe();
         };
-    },[supabase])
+    },[supabase]);
 
 
     const updateChats = (chat:ChatProps) => {
@@ -232,10 +380,12 @@ export function ChatWrapper(props : ChatWrapperProps) {
                 [chat.chatId] : {
                     visited : false,
                     messages : [],
+                    unreadMessagesCount : 0
                 }
             }
         })
     };
+
 
     return (
         <ChatAppContext.Provider value={{
@@ -243,27 +393,31 @@ export function ChatWrapper(props : ChatWrapperProps) {
             handleClick,
             chats: chats,
             setSelectedChat : (chat:ChatProps) => setSelectedChat(chat),
-            updateChats ,
-            user:props.user
+            updateChats,
+            updateMessages,
+            user : props.user,
+            typingUsers
         }}>
-            <div className='flex w-full h-[100%] md:h-[calc(100vh-88px)] box-border sm:border-1 sm:shadow-lg sm:mt-2 mb-4'>
-                <Sidebar 
-                    selectedChat={selectedChat} 
-                    chats={chats} 
-                    handleChatSelection={handleClick} 
-                    user={props.user}
-                    chatState={chatState}
-                    onlineUsers={onlineUsers}
-                />
+            <WebSocketContext.Provider value={socket}>
+                <div className='flex w-full h-[100%] md:h-[calc(100vh-88px)] box-border sm:border-1 sm:shadow-lg sm:mt-2 mb-4'>
+                    <Sidebar 
+                        selectedChat={selectedChat} 
+                        chats={chats} 
+                        handleChatSelection={handleClick} 
+                        user={props.user}
+                        chatState={chatState}
+                        onlineUsers={onlineUsers}
+                    />
 
-                <MessagesWrapper 
-                    selectedChat={selectedChat}
-                    handleChatSelection={handleClick}
-                    user={props.user}
-                    messages={selectedChat ? chatState[selectedChat?.chatId]?.messages : []}
-                />
-            
-            </div>
+                    <MessagesWrapper 
+                        selectedChat={selectedChat}
+                        handleChatSelection={handleClick}
+                        user={props.user}
+                        messages={selectedChat ? chatState[selectedChat?.chatId]?.messages : []}
+                    />
+                
+                </div>
+            </WebSocketContext.Provider>
         </ChatAppContext.Provider>
        
     )
