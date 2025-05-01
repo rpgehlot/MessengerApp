@@ -312,7 +312,8 @@ Deno.serve({
     if (userSessionCounts[socket.userId] === 0) {
       await redis.publish('userState',JSON.stringify({ event : 'userleft', payload: {userId : socket.userId} }));              
       delete userSockets[socket.userId];
-      await redis.set('online-users', getOnlineUsers());
+      const onlineUsers = await getOnlineUsers();
+      await redis.set('online-users', onlineUsers);
     }
     // when a client closes the connecitom, get its userid from socket.userid a
     // and identify which all channels user was subscribed to and if usersockets[socket.userid] === 0

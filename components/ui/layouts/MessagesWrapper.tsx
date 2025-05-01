@@ -71,6 +71,7 @@ export default function MessagesWrapper({ selectedChat, user, messages = [], han
     useEffect(() => {
         setSelectedMessages([]);
         setMessageSelectionEnabled(false);
+        setFirstRender(true);
     },[selectedChat?.chatId]);
     
     const membersSet = new Set([...(selectedChat?.members || []).map(m => m.userId)]);
