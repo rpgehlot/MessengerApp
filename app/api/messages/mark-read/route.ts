@@ -14,7 +14,7 @@ export async function POST(request: Request) {
         .select('entry_id')
         .eq('channel_id', channelId)
         .neq('sender_id',senderId)
-        .in('status',['delievered'])
+        .in('status',["delievered","queued"])
 
     if (error)
         throw new Error('Error fetching messages');

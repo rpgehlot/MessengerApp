@@ -2,7 +2,7 @@ import clsx from "clsx";
 import { Popover, PopoverContent, PopoverTrigger } from "../popover";
 import { EllipsisVerticalIcon, MagnifyingGlassIcon } from "@heroicons/react/16/solid";
 import { Input } from "../input";
-import { ChatCategory, ChatProps, ISidebarProps } from "@/app/lib/descriptors";
+import { Chat, ChatCategory, ISidebarProps } from "@/app/lib/descriptors";
 import { AvatarRow } from "../custom/AvatarRow";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,15 +10,13 @@ import { createClient } from "@/utils/supabase/client";
 import CreateNewChat from "../custom/createNewChat";
 import CreateNewGroupChat from "../custom/createNewGroupChat";
 
-  
-
 const supabase = createClient()
 
 export default function  Sidebar( { chats, selectedChat, user, chatState, onlineUsers, handleChatSelection} : ISidebarProps) {
 
     const [chatMenuOpenState, setChatMenuOpenState] = useState<boolean>(false);
     const [searchQuery, setSearchQuery] = useState<string>('');
-    const [filteredChats, setFilteredChats] = useState<ChatProps[]>(chats);
+    const [filteredChats, setFilteredChats] = useState<Chat[]>(chats);
     const [chatCategory, setChatCategory] = useState<string>('ALL');
     const [chatSelectionEnabled, setChatSelectionEnabled] = useState<boolean>(false);
 
@@ -151,13 +149,13 @@ export default function  Sidebar( { chats, selectedChat, user, chatState, online
                             return chat.isGroupChat;
                         
                         return !chat.isGroupChat
-                    }).map((chat : ChatProps) => (
+                    }).map((chat : Chat) => (
                         <AvatarRow 
                             key={chat.chatId}
                             isGroupChat={chat.isGroupChat}
                             chatId={chat.chatId}
                             chatName={chat.chatName} 
-                            latestMessage={chatState[chat.chatId]?.latestMessage} 
+                            latestMessage={chat.latestMessage} 
                             avatarUrl={chat.avatarUrl}
                             isOnline={onlineUsers.has(chat.members[0].userId)}
                             onClick={() => { 
@@ -166,10 +164,10 @@ export default function  Sidebar( { chats, selectedChat, user, chatState, online
                                 handleChatSelection(chat) 
                             }}
                             members={chat.members}
-                            // messages={chat.messages}
-                            unreadMessagesCount={chatState[chat.chatId]?.unreadMessagesCount}
+                            unreadMessagesCount={chat.unreadMessagesCount}
                             chatSelectionEnabled={chatSelectionEnabled}
                             user={user}
+                            messages={chat.messages}
                         />
                     ))}
                 </div>

@@ -1,6 +1,6 @@
 'use client';
 
-import { ChatProps, ChatState, Message } from "@/app/lib/descriptors";
+import { Chat, ChatProps, ChatState, Message, TypingUserPayload } from "@/app/lib/descriptors";
 import { useEffect, useState, createContext, useCallback, MutableRefObject } from "react";
 import Sidebar from "./Sidebar";
 import MessagesWrapper from "./MessagesWrapper";
@@ -10,7 +10,7 @@ import { Tables, Enums } from "@/app/lib/database-types";
 import { useWebSocket } from "@/lib/utils/hooks/useWebSocket";
 
 type ChatWrapperProps = {
-    chats : ChatProps[];
+    chats : Chat[];
     user: User;
 };
 
@@ -21,15 +21,18 @@ export const ChatAppContext = createContext<any>(null);
 export const WebSocketContext = createContext<MutableRefObject<WebSocket | null> | null>(null);
 
 export function ChatWrapper(props : ChatWrapperProps) {
-    const [selectedChat, setSelectedChat] = useState<ChatProps | null>(null);
+    const [selectedChat, setSelectedChat] = useState<Chat | null>(null);
 
+    const initialState = props.chats.map(chat => { 
+        return  {
+            ...chat, 
+            visited : false, 
+        }
+    });
     const [chatState, setChatState] = useState<{[chatId : number] : ChatState}>({});
-    const [chats, setChats] = useState<ChatProps[]>(props.chats);
+    const [chats, setChats] = useState<Chat[]>(initialState);
     const [onlineUsers, setOnlineUsers] = useState<Set<string>>(new Set([]));
-    const [typingUsers , setTypingUsers] = useState<{
-        channelId : number;
-        userId : string;
-    }[]>([]);
+    const [typingUsers , setTypingUsers] = useState<TypingUserPayload[]>([]);
     const handleWsMessage = useCallback((event: string, payload : any) => {
 
 
@@ -91,7 +94,10 @@ export function ChatWrapper(props : ChatWrapperProps) {
     const { socket } = useWebSocket({
         wsurl : 'https://vxvgrflvqvvmbikszhbd.supabase.co/functions/v1/onlineUsers',
         onWsMessage : handleWsMessage,
-        user : props.user
+        user : props.user,
+        onWsClose() {
+            setOnlineUsers(new Set([]));
+        },
     });
 
 
@@ -116,8 +122,14 @@ export function ChatWrapper(props : ChatWrapperProps) {
             return;
         }
 
-        setChatState((s) => {
-            const data =  s[newMessage.channel_id] || { visited : false, messages : [] };
+        setChats((prevChats) => {
+            
+            const foundChatIndex = prevChats.findIndex(chat => chat.chatId === newMessage.channel_id);
+            
+            if (foundChatIndex < 0 )
+                return [...prevChats];
+
+            const foundChat = prevChats[foundChatIndex];
 
             let status = newMessage.status;
             if(pendingUpdates.has(newMessage.entry_id)) {
@@ -139,17 +151,18 @@ export function ChatWrapper(props : ChatWrapperProps) {
                 }
             };
 
-            return {
-                ...s,
-                [newMessage.channel_id] : {
-                    ...data,
-                    latestMessage : {
-                        ...newMessageObject
-                    },
-                    messages : [...data.messages, {...newMessageObject}],
-                    unreadMessagesCount : (newMessage.channel_id !== selectedChat?.chatId && newMessage.sender_id !== props.user.id) ? (data.unreadMessagesCount + 1) : data.unreadMessagesCount
-                }
-            }
+            const clonedChats = [...prevChats];
+            clonedChats[foundChatIndex] = {
+                ...foundChat,
+                unreadMessagesCount : (newMessage.channel_id !== selectedChat?.chatId && newMessage.sender_id !== props.user.id) ? (foundChat.unreadMessagesCount + 1) : foundChat.unreadMessagesCount,
+                messages : [...foundChat.messages, {...newMessageObject}],
+                latestMessage : {
+                    ...newMessageObject
+                },
+            };
+
+            return clonedChats;
+            
         });
 
         // when a new message arrives in the selected chat for a user, mark the message as read.
@@ -178,56 +191,79 @@ export function ChatWrapper(props : ChatWrapperProps) {
         const newPayload = newobj as Tables<'messages'>;
 
         if (oldPayload.status !== newPayload.status) {
-            setChatState((s) => {
-                const data =  s[newPayload.channel_id] || { visited : false, messages : [] };
+            setChats((prevChats) => {
+            
+                const foundChatIndex = prevChats.findIndex(chat => chat.chatId === newPayload.channel_id);
                 
-                const msgIndex = data.messages.findIndex(m => m.messageId === newPayload.message_id);
+                if (foundChatIndex < 0 )
+                    return [...prevChats];
+                
+                const foundChat = prevChats[foundChatIndex];
+
+                const msgIndex = foundChat.messages.findIndex(m => m.messageId === newPayload.message_id);
                 if (msgIndex >= 0 ) {
-                    const newList = [...data.messages];
+                    const newList = [...foundChat.messages];
                     newList[msgIndex] = {
-                        ...data.messages[msgIndex],
+                        ...foundChat.messages[msgIndex],
                         status : newPayload.status
                     };
 
-                    return {
-                        ...s,
-                        [newPayload.channel_id] : {
-                            ...data,
-                            messages : newList
-                        }
-                    }
+                    const clonedChats = [...prevChats];
+                    clonedChats[foundChatIndex] = {
+                        ...clonedChats[foundChatIndex],
+                        messages : newList
+                    };
+
+                    return clonedChats;
                 }
                 else {
                     pendingUpdates.set(newPayload.entry_id, newPayload);
                 }
 
-                return {
-                    ...s,
-                    [newPayload.channel_id] : {
-                        ...data,
-                    }
-                }
+                return [...prevChats];
             });
+
         }
     };
 
     const updateMessages = (chatId : number, newMessages : Message[]) => {
-        setChatState((s) => {
-            const curr = s[chatId] || { messages : []};
-            return {
-                ...s,
-                [chatId] : {
-                    ...curr,
-                    messages : [
-                        ...newMessages,                 
-                        ...curr.messages
-                    ]
-                }
-            }
+        setChats((prevChats) => {
+            
+            const foundChatIndex = prevChats.findIndex(chat => chat.chatId === chatId);
+            
+            if (foundChatIndex < 0 )
+                return [...prevChats];
+            
+            const foundChat = prevChats[foundChatIndex];
+
+            const clonedChats = [...prevChats];
+            clonedChats[foundChatIndex] = {
+                ...foundChat,
+                messages : [
+                    ...newMessages,
+                    ...foundChat.messages,
+                ]
+            };
+
+            return clonedChats;
         });
+
     };
 
     useEffect(() => {
+
+        const { data } =  supabase.auth.onAuthStateChange((event, session) => {
+            console.log(event, session)
+            if (event === 'TOKEN_REFRESHED' && session) {
+              console.log('New access token:', session.access_token);
+              supabase.realtime.setAuth(session.access_token);
+            } else if (event === 'SIGNED_IN' && session) {
+                console.log('session : ',session);
+              supabase.realtime.setAuth(session.access_token);
+            } else if (event === 'SIGNED_OUT') {
+              supabase.realtime.setAuth(null);
+            } 
+        });
 
         const chatIds = chats.map(chat => chat.chatId);
         if (chatIds.length == 0)
@@ -250,22 +286,21 @@ export function ChatWrapper(props : ChatWrapperProps) {
         }).subscribe();
         
 
-
         return () => {
             supabase.removeChannel(channel);
-            // supabase.removeChannel(updateListner);
+            data?.subscription.unsubscribe();
         };
     },[chats, supabase, selectedChat, setSelectedChat]);
 
-    const handleClick = async (chat : ChatProps | null) => {
+    const handleClick = async (chat : Chat | null) => {
 
         console.log('chat : ',chat)
         setSelectedChat(chat);
 
-        if (chat === null || !chatState[chat.chatId] || !chatState[chat.chatId].latestMessage)
+        if (chat === null)
             return;
             
-        if (chatState[chat?.chatId].unreadMessagesCount > 0) {
+        if (chat.unreadMessagesCount > 0) {
 
             try {
                 await fetch('/api/messages/mark-read',{ 
@@ -282,38 +317,50 @@ export function ChatWrapper(props : ChatWrapperProps) {
 
             }
 
-            setChatState((s) => {
-                const curr = s[chat.chatId] || {};
-                return {
-                    ...s,
-                    [chat.chatId] : {
-                        ...curr,
-                        unreadMessagesCount : 0,
-                    }
-                }
+            setChats((prevChats) => {
+                const foundChatIndex = prevChats.findIndex(c => c.chatId === chat.chatId);
+            
+                if (foundChatIndex < 0 )
+                    return [...prevChats];
+                
+                const foundChat = prevChats[foundChatIndex];
+
+                const clonedChats = [...prevChats];
+                clonedChats[foundChatIndex] = {
+                    ...foundChat,
+                    unreadMessagesCount : 0
+                };
+
+                return clonedChats;
             });
         }
        
 
-        if(!chatState[chat.chatId].visited) {
+        if(!chat.visited && chat.latestMessage?.messageId) {
             try {
-                const res = await fetch(`/api/messages?channelId=${chat.chatId}&lastMessageId=${chatState[chat.chatId].latestMessage?.messageId}`);
+                const res = await fetch(`/api/messages?channelId=${chat.chatId}&lastMessageId=${chat.latestMessage?.messageId}`);
                 const { data } = await res.json();
                 console.log('Received data:', data);
 
-                setChatState((s) => {
-                    const curr = s[chat.chatId] || {};
-                    return {
-                        ...s,
-                        [chat.chatId] : {
-                            ...curr,
-                            visited : true,
-                            latestMessage : curr.latestMessage ? {...curr.latestMessage} : undefined,
-                            messages : [...data, ...curr.messages],
-                            unreadMessagesCount : 0
-                        }
-                    }
+                setChats((prevChats) => {
+                    const foundChatIndex = prevChats.findIndex(c => c.chatId === chat.chatId);
+                
+                    if (foundChatIndex < 0 )
+                        return [...prevChats];
+                    
+                    const foundChat = prevChats[foundChatIndex];
+    
+                    const clonedChats = [...prevChats];
+                    clonedChats[foundChatIndex] = {
+                        ...foundChat,
+                        messages : [...data, ...(chat.latestMessage ? [{...chat.latestMessage}] : [])],
+                        unreadMessagesCount : 0,
+                        visited : true
+                    };
+    
+                    return clonedChats;
                 });
+
 
             } catch(error) {
                 console.error('Fetch error:', error);
@@ -323,35 +370,34 @@ export function ChatWrapper(props : ChatWrapperProps) {
     };
 
     useEffect(() => {
+        console.log('chats changed');
+        if(selectedChat) {
+            const foundChat = chats.find(c => c.chatId === selectedChat.chatId);
+            if (foundChat)
+                setSelectedChat(foundChat);
+        }
 
-        console.log('props.chats changed');
-        
-        props.chats.forEach((chat) => {
-            setChatState((s) => {
-                return {
-                    ...s,
-                    [chat.chatId] : {
-                        visited : false,
-                        latestMessage : chat.latestMessage ? {...chat.latestMessage} : undefined,
-                        messages : chat.latestMessage ? [{...chat.latestMessage}] : [],
-                        unreadMessagesCount : chat.unreadMessagesCount
-                    }
-                }
-            })
-        });
-
-    },[props.chats]);
-
-
+    },[chats]);
+     
 
     useEffect(() => {
 
         // Join a room/topic. Can be anything except for 'realtime'.
         const myChannel = supabase.channel(props.user.id)
         // Simple function to log any messages we receive
-        function onNewChatReceived(payload : ChatProps) {
+        function onNewChatReceived(payload : Chat) {
             console.log(payload);
-            setChats([payload, ...chats])
+            setChats((prevChats) => {
+                return [
+                    {
+                        ...payload,
+                        visited : false
+                    },
+                    ...prevChats
+                ];
+            });
+
+            handleClick(payload);
         }
 
         // Subscribe to the Channel
@@ -372,18 +418,8 @@ export function ChatWrapper(props : ChatWrapperProps) {
     },[supabase]);
 
 
-    const updateChats = (chat:ChatProps) => {
+    const updateChats = (chat:Chat) => {
         setChats([chat, ...chats]);
-        setChatState((s) => {
-            return {
-                ...s,
-                [chat.chatId] : {
-                    visited : false,
-                    messages : [],
-                    unreadMessagesCount : 0
-                }
-            }
-        })
     };
 
 
@@ -392,7 +428,7 @@ export function ChatWrapper(props : ChatWrapperProps) {
             selectedChat,
             handleClick,
             chats: chats,
-            setSelectedChat : (chat:ChatProps) => setSelectedChat(chat),
+            setSelectedChat : (chat:Chat) => setSelectedChat(chat),
             updateChats,
             updateMessages,
             user : props.user,
@@ -413,7 +449,8 @@ export function ChatWrapper(props : ChatWrapperProps) {
                         selectedChat={selectedChat}
                         handleChatSelection={handleClick}
                         user={props.user}
-                        messages={selectedChat ? chatState[selectedChat?.chatId]?.messages : []}
+                        messages={selectedChat ? selectedChat.messages : []}
+                        // messages={selectedChat && !selectedChat.newChat ? chatState[selectedChat?.chatId]?.messages : []}
                     />
                 
                 </div>

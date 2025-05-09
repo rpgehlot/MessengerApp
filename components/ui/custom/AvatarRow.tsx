@@ -1,7 +1,7 @@
 'use client';
 
 import moment from "moment";
-import { ChatProps } from "@/app/lib/descriptors";
+import { ChatProps, TypingUserPayload } from "@/app/lib/descriptors";
 import clsx from "clsx";
 import { useContext, useEffect, useState } from "react";
 import { Checkbox } from "@/components/ui/checkbox"
@@ -11,7 +11,7 @@ import { ChatAppContext } from "../layouts/chatWrapper";
 export function AvatarRow(
     { chatId, chatName, latestMessage, avatarUrl, isOnline, isGroupChat, user, chatSelectionEnabled, members,  unreadMessagesCount: x, onClick} : ChatProps
 ) {
-    const sentByMe = latestMessage?.sender.id === user.id;
+    const sentByMe = latestMessage?.sender?.id === user.id;
     const [unReadMessagesState, setUnReadMessagesState]= useState<boolean>(latestMessage?.status !== 'read');
     const [unreadMessagesCount, setUnreadMessagesCount]= useState<number>(x);
     const chatContext = useContext(ChatAppContext);
@@ -22,8 +22,8 @@ export function AvatarRow(
     },[x, latestMessage]);
 
     const membersSet = new Set([...members.map(m => m.userId)]);
-    const isSomeUserTyping = chatContext.typingUsers?.find((entry) => {
-        return entry.channel_id === chatId && membersSet.has(entry.userId) && chatContext.selectedChat?.chatId != chatId
+    const isSomeUserTyping = chatContext.typingUsers?.find((entry : TypingUserPayload) => {
+        return entry.channelId === chatId && membersSet.has(entry.userId) && chatContext.selectedChat?.chatId != chatId
     });
 
     return (

@@ -1,9 +1,7 @@
-import { Database, Tables, Enums } from "@/app/lib/database-types";
-import { createClient } from "@/utils/supabase/server";
-import { ChatProps } from "./descriptors";
+import { Database } from "@/app/lib/database-types";
+import { Chat } from "./descriptors";
 import { SupabaseClient } from "@supabase/supabase-js";
 
-const MESSAGES_PER_CALL = 50;
 
 export async function fetchAllChats(supabase: SupabaseClient<Database>) {
     const { data, error } = await supabase.auth.getUser();
@@ -20,7 +18,7 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
         throw new Error('Error fetching chats');
 
 
-    const chats:Partial<ChatProps>[] = [];
+    const chats:Partial<Chat>[] = [];
     for (let i = 0 ; i < userChannels.length ; i++ ) {
         const channel = userChannels[i];
 
@@ -84,11 +82,10 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
             });
 
             if (otherUser.length === 1) {
-                const chat : Partial<ChatProps> = {
+                const chat : Chat = {
                     chatId : channel.channels.id,
                     chatName : `${otherUser[0].users.users_metadata?.first_name} ${otherUser[0].users.users_metadata?.last_name}`,
                     isGroupChat : channel.channels.is_group,
-                    isOnline : !!otherUser[0].users.users_metadata?.is_online,
                     latestMessage : latestMessage.map((entry) => {
                         return {
                             messageId : entry.message_id,
@@ -105,7 +102,7 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
                     })[0],
                     avatarUrl : otherUser[0].users.users_metadata?.avatar_url ?? undefined,
                     description : otherUser[0].users.users_metadata?.bio,
-                    username : otherUser[0].users.users_metadata?.username,
+                    // username : otherUser[0].users.users_metadata?.username,
                     unreadMessagesCount : count!!,
                     members : [
                         {
@@ -117,6 +114,7 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
                             name : `${selfUser[0].users.users_metadata?.first_name} ${selfUser[0].users.users_metadata?.last_name}`
                         }
                     ],
+                    messages : []
                 };
 
                 chats.push(chat);
@@ -126,7 +124,7 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
         else {
 
 
-            const chat : Partial<ChatProps> = {
+            const chat : Chat = {
                 chatId : channel.channels.id,
                 chatName : channel.channels.name,
                 isGroupChat : channel.channels.is_group,
@@ -153,7 +151,8 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
                         name : `${user.users.users_metadata?.first_name} ${user.users.users_metadata?.last_name}`,
                         avatarUrl : user.users.users_metadata?.avatar_url ?? undefined
                     }
-                })
+                }),
+                messages: []
             };
 
             chats.push(chat);
@@ -162,5 +161,10 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
 
     }
 
-    return chats;
+    return chats.sort((a,b)=>{
+        if (a.latestMessage && b.latestMessage)
+            return new Date(b.latestMessage.createdAt).getTime() - new Date(a.latestMessage.createdAt).getTime();
+        return Infinity;
+    });
+
 }

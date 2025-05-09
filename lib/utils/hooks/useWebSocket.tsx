@@ -5,6 +5,7 @@ type useWebSocketProps = {
     user : User;
     wsurl : string;
     onWsMessage : (event : string, payload : any) => void;
+    onWsClose : () => void;
 };
 
 export function useWebSocket(props : useWebSocketProps) {
@@ -33,7 +34,7 @@ export function useWebSocket(props : useWebSocketProps) {
             try {
                 const data = JSON.parse(ev.data) as {event : string; payload : any;};
                 const { event, payload } = data;
-                props.onWsMessage(event, payload);
+                props.onWsMessage?.(event, payload);
 
             } catch (error) {
                 console.error('Websocket message parsing error : ',error);
@@ -46,6 +47,7 @@ export function useWebSocket(props : useWebSocketProps) {
 
         wsRef.current.onclose = () =>  {
             console.error('Websocket closed');
+            props.onWsClose?.();
             if (reconnectionAttempts.current < maxAttempts) {
                 // const delay = Math.min(1000 * 2 ** reconnectionAttempts.current, 10000);
                 reconnectionAttempts.current += 1;

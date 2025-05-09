@@ -1,4 +1,4 @@
-import { IMessagesWrapper, Message as MessageDescriptor, MessageBlock } from "@/app/lib/descriptors";
+import { IMessagesWrapper, Message as MessageDescriptor, MessageBlock, TypingUserPayload } from "@/app/lib/descriptors";
 import { useContext, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Message } from "../custom/MessageBlock";
 import MessagesHeader from "./MessagesHeader";
@@ -9,7 +9,7 @@ import { ChatAppContext } from "./chatWrapper";
 import { clsx } from "clsx";
 import { useDebouncedCallback } from "use-debounce";
 
-export default function MessagesWrapper({ selectedChat, user, messages = [], handleChatSelection } : IMessagesWrapper){
+export default function MessagesWrapper({ selectedChat, user, messages, handleChatSelection } : IMessagesWrapper){
 
     
     const messagesContainerRef = useRef<HTMLDivElement>(null);
@@ -24,9 +24,6 @@ export default function MessagesWrapper({ selectedChat, user, messages = [], han
     const oldestMessageId = useRef(-10);
 
     useEffect(() => {
-        if (messages.length === 0)
-            return;
-
         const map : {[s : string ] : boolean} = {};
         const list : (MessageDescriptor | string)[] = [];
         messages.forEach((m) => {
@@ -44,9 +41,6 @@ export default function MessagesWrapper({ selectedChat, user, messages = [], han
     },[messages]);
 
     useLayoutEffect(() => {
-        
-        console.log('scrolling to bottom');
-        console.log('messagesEndRef.current : ',messagesEndRef.current);
         if (firstRender) {
             messagesEndRef.current?.scrollIntoView({
                 block: 'start',
@@ -75,16 +69,15 @@ export default function MessagesWrapper({ selectedChat, user, messages = [], han
     },[selectedChat?.chatId]);
     
     const membersSet = new Set([...(selectedChat?.members || []).map(m => m.userId)]);
-    const isSomeUserTyping = chatContext.typingUsers?.find((entry) => {
-        return entry.channel_id === selectedChat?.chatId && membersSet.has(entry.userId)
+    const isSomeUserTyping = chatContext.typingUsers?.find((entry: TypingUserPayload) => {
+        return entry.channelId === selectedChat?.chatId && membersSet.has(entry.userId)
     });
 
     const handleScroll = useDebouncedCallback(async () => {
-        if (messagesContainerRef.current && selectedChat) {
+        if (messagesContainerRef.current && selectedChat && messages.length > 0) {
     
             const lastMessageId = messages[0].messageId;
             const { scrollTop } = messagesContainerRef.current;
-            console.log('scrollTop : ',scrollTop);
 
             if (scrollTop <= 10 && lastMessageId > oldestMessageId.current) {
                 const respone = await fetch(`/api/messages?channelId=${selectedChat?.chatId}&lastMessageId=${lastMessageId}`);

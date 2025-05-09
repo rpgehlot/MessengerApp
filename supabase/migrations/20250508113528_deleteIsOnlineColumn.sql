@@ -1,0 +1,1 @@
+ALTER TABLE users_metadata if exists drop column is_online;

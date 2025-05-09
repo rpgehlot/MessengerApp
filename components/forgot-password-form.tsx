@@ -11,45 +11,33 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {  LoginState, signInAction } from "@/app/lib/actions"
+import { forgotPasswordAction, LoginState, signInAction } from "@/app/lib/actions"
 import { useActionState, useEffect } from 'react';
 import { toast } from "sonner"
 import { EnvelopeIcon, KeyIcon } from "@heroicons/react/24/outline";
-import { createClient } from "@/utils/supabase/client";
 import Link from "next/link";
 
 
-export async function googleSignInAction() {
 
-  const supabase = await createClient();
-
-  const {data, error} = await supabase.auth.signInWithOAuth({
-    provider: 'google',
-    options: {
-      queryParams: {
-        access_type: 'offline',
-        prompt: 'consent',
-      },
-      redirectTo: 'http://localhost:3000/api/auth/callback',
-    },
-  });
-
-  console.log('error : ',error, data);
-}
-
-export function LoginForm({
+export default function ForgotPassword({
   className,
   ...props
 }: React.ComponentProps<"div">) {
 
   const initialState : LoginState = { message : null, errors : [] };
-  const [state, formAction, isPending] = useActionState(signInAction, initialState);
+  const [state, formAction, isPending] = useActionState(forgotPasswordAction, initialState);
 
   useEffect(() => {
     if (state.errors && state.errors.length > 0) {
       toast.error(`${state.errors[0]}`);
     }
   },[state.errors]);
+
+  useEffect(() => {
+    console.log('state.message : ',state.message)
+    if (state.message )
+      toast.success(state.message);
+  },[state.message]);
 
 
 
@@ -64,11 +52,11 @@ export function LoginForm({
                 </svg>
               </span>
               <h1>
-                Login to your account
+                Reset your password
               </h1>
           </CardTitle>
           <CardDescription>
-            Enter your email below to login to your account
+            Enter your email below to reset your password. <br/>You will receive an email to verify 
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -90,46 +78,25 @@ export function LoginForm({
                   />
                 </div>
               </div>
-              <div className="grid gap-3">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                  <Link
-                    href="/forgot-password"
-                    className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
-                  >
-                    Forgot your password?
-                  </Link>
-                </div>
-                <div className="relative">
-                  <span className="absolute top-[50%] left-5 transform -translate-[50%]">
-                    <KeyIcon className="size-6 text-zinc-400"/>
-                  </span>
-                  <Input 
-                    id="password" 
-                    type="password" 
-                    name="password" 
-                    required 
-                  />
-                </div>
-                
-              </div>
               <div className="flex flex-col gap-3">
                 <Button type="submit" className="w-full">
-                  Login
+                  Verify email
                 </Button>
               </div>
             </div>
             
           </form>
           <div className="flex flex-col gap-1 mt-3">
-            <Button onClick={googleSignInAction} variant="outline" className="w-full">
-                    Login with Google
-            </Button>
-            <div className="mt-4 text-center text-sm">
+            <div className="mt-1 text-center text-sm">
+              <Link href="/login" className="underline underline-offset-4">
+                Back to Login
+              </Link>
+            </div>
+            <div className="text-center text-sm">
               Don&apos;t have an account?{" "}
-              <a href="/signup" className="underline underline-offset-4">
+              <Link href="/signup" className="underline underline-offset-4">
                 Sign up
-              </a>
+              </Link>
             </div>
           </div>
          

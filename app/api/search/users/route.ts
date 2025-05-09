@@ -6,6 +6,8 @@ export async function GET(request: NextRequest)  {
 
     const searchParams = request.nextUrl.searchParams;
     const query = searchParams.get('query') ?? '';
+    const exactMatch = searchParams.get('exactMatch') ?? false;
+
     const limit = Number(searchParams.get('limit')) ?? 10;
     console.log('limit  : ',limit);
     const supabase = await createClient();
@@ -20,10 +22,13 @@ export async function GET(request: NextRequest)  {
             `)
             .limit(limit)
             // .limit(limit)
-    if (query === '') {
+    if (query === '' && !exactMatch) {
         usersQuery = usersQuery.order('username');
     }
-    else {
+    else if (query !=='' && exactMatch) {
+        console.log('exactMatch : ',exactMatch, query)
+        usersQuery = usersQuery.eq('username',query.trim());
+    } else {
         usersQuery = usersQuery.ilike('username',`%${query}%`);
     }
     

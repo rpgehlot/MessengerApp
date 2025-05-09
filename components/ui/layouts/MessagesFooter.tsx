@@ -1,4 +1,4 @@
-import { IMessagesFooterProps } from "@/app/lib/descriptors";
+import { ChatMember, IMessagesFooterProps } from "@/app/lib/descriptors";
 import { EmojiPicker } from "@/lib/utils/hooks/EmojiPicker";
 import useOutsideClick from "@/lib/utils/hooks/useOutsideClick";
 import { FaceSmileIcon, PhotoIcon } from '@heroicons/react/24/outline';
@@ -42,12 +42,12 @@ export default function MessagesFooter({
             if (!isTyping) {
                 setIsTyping(true);
                 console.log('typing start...');
-                webSocketContext?.current.send(JSON.stringify({
+                webSocketContext?.current?.send(JSON.stringify({
                     event : 'typing-start',
                     payload : {
                         topic : chatContext.selectedChat?.chatName,
                         channel_id :chatContext.selectedChat?.chatId,
-                        members : chatContext.selectedChat?.members.map(u => u.userId),
+                        members : chatContext.selectedChat?.members.map((u : ChatMember) => u.userId),
                         userId : chatContext.user.id
                     }
                 }));
@@ -59,12 +59,12 @@ export default function MessagesFooter({
             timer = setTimeout(() => {
                 console.log('typing end');
                 setIsTyping(false);
-                webSocketContext?.current.send(JSON.stringify({
+                webSocketContext?.current?.send(JSON.stringify({
                     event : 'typing-end',
                     payload : {
                         topic : chatContext.selectedChat?.chatName,
                         channel_id :chatContext.selectedChat?.chatId,
-                        members : chatContext.selectedChat?.members.map(u => u.userId),
+                        members : chatContext.selectedChat?.members.map((u : ChatMember) => u.userId),
                         userId : chatContext.user.id
                     }
                 }));
@@ -119,11 +119,6 @@ export default function MessagesFooter({
 
             const data = await respone.json();
             console.log('data : ',data);
-
-            chatContext.updateChats(data.response);
-            setTimeout(() => {
-                chatContext.handleClick(data.response);
-            },1000);
             chatId = data.response.chatId;
         }
 

@@ -1,17 +1,14 @@
 import { Tables } from '@/app/lib/database-types';
-import { ChatProps } from '@/app/lib/descriptors';
+import { Chat, ChatProps } from '@/app/lib/descriptors';
 import { createClient } from '@/utils/supabase/server'
 
-function generateResponse(channelId: number, otherUser : Omit<Tables<'users_metadata'>,"id">, selfUser : Omit<Tables<'users_metadata'>, 'id'>, insertChannel : Tables<'channels'>) {
+function generateResponse(channelId: number, otherUser : Omit<Tables<'users_metadata'>,"id">, selfUser : Omit<Tables<'users_metadata'>, 'id'>, insertChannel : Tables<'channels'>):Chat {
     return {
         chatId : channelId,
         chatName : `${otherUser.first_name} ${otherUser.last_name}`,
         isGroupChat : insertChannel.is_group,
-        isOnline : !!otherUser.is_online,
-        latestMessage : {},
         avatarUrl : otherUser.avatar_url ?? undefined,
         description : otherUser.bio,
-        username : otherUser.username,
         unreadMessagesCount : 0,
         members : [
             {
@@ -22,7 +19,8 @@ function generateResponse(channelId: number, otherUser : Omit<Tables<'users_meta
                 userId : selfUser.user_id,
                 name : `${selfUser.first_name} ${selfUser.last_name}`
             }
-        ]
+        ],
+        messages : []
     };
 }
 
@@ -49,7 +47,7 @@ export async function POST(request: Request) {
         throw new Error('Unknown error occured');
 
     let channelId;
-    let response = {};
+    let response:Chat;
     console.log('commonChannelExists : ',commonChannelExists);
     if ( commonChannelExists.data.length === 0) {
 
@@ -127,7 +125,13 @@ export async function POST(request: Request) {
             type: 'broadcast',
             event: 'shout',
             payload: {event : 'newChat', data : otherUserResponse},
-          })
+        });
+
+        await supabase.channel(selfUser[0].user_id).send({
+            type: 'broadcast',
+            event: 'shout',
+            payload: {event : 'newChat', data : response},
+        });
     }
     else if (commonChannelExists.data.length > 0){
         channelId = commonChannelExists.data[0].channel_id;
@@ -198,7 +202,6 @@ export async function POST(request: Request) {
                 chatId : channelId,
                 chatName : `${otherUser[0].users.users_metadata?.first_name} ${otherUser[0].users.users_metadata?.last_name}`,
                 isGroupChat : channel.is_group,
-                isOnline : !!otherUser[0].users.users_metadata?.is_online,
                 latestMessage :  {
                         messageId : latestMessage.message_id,
                         createdAt : latestMessage.created_at,
@@ -213,7 +216,6 @@ export async function POST(request: Request) {
                 },
                 avatarUrl : otherUser[0].users.users_metadata?.avatar_url ?? undefined,
                 description : otherUser[0].users.users_metadata?.bio,
-                username : otherUser[0].users.users_metadata?.username,
                 unreadMessagesCount : 0,
                 members : [
                     {
@@ -224,7 +226,8 @@ export async function POST(request: Request) {
                         userId : user?.user.id,
                         name : `${selfUser[0].users.users_metadata?.first_name} ${selfUser[0].users.users_metadata?.last_name}`
                     }
-                ]
+                ],
+                messages : []
             };
 
         }

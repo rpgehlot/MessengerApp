@@ -1,5 +1,5 @@
 import { Tables } from '@/app/lib/database-types';
-import { ChatProps } from '@/app/lib/descriptors';
+import { Chat, ChatProps } from '@/app/lib/descriptors';
 import { createClient } from '@/utils/supabase/server';
 
 
@@ -69,19 +69,20 @@ export async function POST(request: Request) {
     console.log('insertChannelLastSequence : ',insertChannelLastSequence);
     console.log('insertChannelLastSequenceError : ',insertChannelLastSequenceError);
 
-    const response = {
+    const response:Chat = {
         chatId : insertChannel.id,
         chatName : insertChannel.name,
         isGroupChat : insertChannel.is_group,
         avatarUrl : insertChannel.avatar_url ?? undefined,
-        description : insertChannel.channel_description,
+        description : insertChannel.channel_description ?? undefined,
         unreadMessagesCount : 0,
         members : users?.map((u) => {
             return {
                 userId : u.user_id,
                 name : `${u.first_name} ${u.last_name}`
             }
-        })
+        }),
+        messages : []
     };
 
     for (const u of users){

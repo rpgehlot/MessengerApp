@@ -60,6 +60,7 @@ export default function CreateNewChat(props : ICreateNewChatProps){
                 description : '',
                 isGroupChat : false,
                 username : user.username,
+                messages : [],
                 members : [
                     {
                         userId : user.userId,

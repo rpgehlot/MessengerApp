@@ -84,7 +84,8 @@ const getOnlineUsers = async () => {
   const userSessionCounts = await redis.get<UserSessionCount>('userSessionCounts') || {};
   const s = new Set<string>([]);
   for (const user in userSessionCounts) {
-    s.add(user);
+    if (userSessionCounts[user] > 0)
+      s.add(user);
   }
   return [...s];
 };
@@ -163,7 +164,7 @@ Deno.serve({
     if (!alreadyReset) {
       console.log('reset key not set in serverid : ',serverId);
       await redis.del('userSessionCounts');
-      await redis.set(resetKey, 'done', { ex: 86400 }); // Expire after 24 hours
+      await redis.set(resetKey, 'done', { ex: 152 }); // Expire after 24 hours
       console.log(`Redis state reset for deployment ${deploymentVersion}`);
     }
   

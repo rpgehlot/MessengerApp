@@ -36,4 +36,20 @@ const seedAuthUsers = async () => {
   }
 };
 
+
+const deleteAllAuthUsers = async () => {
+  const { data, error } = await supabase.auth.admin.listUsers();
+  if (error) {
+    // console.error('Error fetching users:', error.message);
+    return;
+  }
+
+  for (const user of data.users) {
+    await supabase.auth.admin.deleteUser(user.id);
+    // console.log(`Deleted user: ${user.email}`);
+  }
+
+  await supabase.from("users").delete({ count : 'exact'});
+};
+
 seedAuthUsers();

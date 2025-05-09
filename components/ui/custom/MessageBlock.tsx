@@ -75,7 +75,6 @@ export function Message(props : MessageBlock ) {
 
                             {props.content && (<span>
                                 {props.content}
-                                {props.messageId}
                             </span>)}
                             
                             {props.media?.type ==='image' && (

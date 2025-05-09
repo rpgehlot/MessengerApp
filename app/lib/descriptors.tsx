@@ -18,46 +18,38 @@ export type Message = {
     };
 };
 
+export type ChatMember = {
+    userId : string;
+    name : string;
+    avatarUrl? : string;
+};
 
-export interface ChatProps {
+export type Chat = {
     chatId : number;
     chatName : string;
     isGroupChat :boolean;
-    members: Array<{
-        userId : string;
-        name : string;
-        avatarUrl? : string;
-    }>;
-    isOnline : boolean;
-    latestMessage? : Message
+    members: Array<ChatMember>;
+    latestMessage? : Message;
     avatarUrl? : string;
     description? :string;
-    username? : string;
     unreadMessagesCount : number;
-    onClick?: () => void;
-    messages? : MessageBlock[];
-    chatSelectionEnabled? : boolean;
-    user : User;
+    messages : Message[];
     newChat? : {
         userId: string
-    }
+    };
+    visited? : boolean;
+};
+
+
+export interface ChatProps extends Chat {
+    username? : string;
+    onClick?: () => void;
+    chatSelectionEnabled? : boolean;
+    isOnline: boolean;
+    user : User;
 }
 
-export interface MessageBlock {
-    messageId : number;
-    sender :  {
-        name : string;
-        id : string;
-        email : string;
-        avatarUrl : string;
-    };
-    createdAt : string;
-    content? : string;
-    media? : {
-        type : 'audio' | 'video' | 'image',
-        url : string;
-    };
-    status : Enums<'messagestatus'>;
+export interface MessageBlock extends Message {
     loggedInUserId : string;
     displayName : boolean;
     messageSelectionEnabled : boolean;
@@ -73,14 +65,13 @@ export interface IsTypingMessage {
     };
 }
 
-
-
+export type TypingUserPayload = {
+    channelId : number;
+    userId : string;
+};
 
 export type ChatState = {
     visited :  boolean;
-    latestMessage? : Message;
-    messages : Message[];
-    unreadMessagesCount : number;
 };
 
 export enum ChatCategory {
@@ -91,30 +82,30 @@ export enum ChatCategory {
 
 
 export interface ISidebarProps {
-    chats : ChatProps[];
-    selectedChat : ChatProps | null;
-    handleChatSelection  : (chat: ChatProps) => void;
+    chats : Chat[];
+    selectedChat : Chat | null;
+    handleChatSelection  : (chat: Chat) => void;
     user : User;
     chatState : {[chatId : number] : ChatState};
     onlineUsers : Set<string>;
 }
 
 export interface IMessagesWrapper {
-    selectedChat : ChatProps | null;
-    handleChatSelection  : (chat: ChatProps | null) => void;
+    selectedChat : Chat | null;
+    handleChatSelection  : (chat: Chat | null) => void;
     user : User;
     messages : Message[];
 }
 
 export interface IMessagesHeaderProps {
-    handleChatSelection  : (chat: ChatProps | null) => void;
-    selectedChat : ChatProps;
+    handleChatSelection  : (chat: Chat | null) => void;
+    selectedChat : Chat;
     setMessageSelectionEnabled : (v : boolean) => void;
 }
 
 export interface IMessagesFooterProps {
-    handleChatSelection  : (chat: ChatProps | null) => void;
-    selectedChat : ChatProps;
+    handleChatSelection  : (chat: Chat | null) => void;
+    selectedChat : Chat;
     setMessageSelectionEnabled : (v : boolean) => void;
     messageSelectionEnabled : boolean;
     selectedMessages : MessageBlock[];
@@ -122,7 +113,7 @@ export interface IMessagesFooterProps {
 }
 
 export interface IProfileSectionProps {
-    selectedChat : ChatProps;
+    selectedChat : Chat;
     children? : React.ReactNode
 }
 

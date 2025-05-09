@@ -38,10 +38,18 @@ export async function updateSession(request: NextRequest) {
 
   // IMPORTANT: DO NOT REMOVE auth.getUser()
 
+  if (
+      request.nextUrl.pathname.startsWith('/api/auth') ||
+      request.nextUrl.pathname.startsWith('/forgot-password') || 
+      request.nextUrl.pathname.startsWith('/reset')
+  
+  ) {
+    return supabaseResponse;
+  }
+
   const {
     data: { user },
   } = await supabase.auth.getUser()
-
   if (
     !user &&
     !request.nextUrl.pathname.startsWith('/login') &&
