@@ -34,7 +34,7 @@ export default function ProfileSection({
                                 <img src={selectedChat.avatarUrl} className="w-full h-full aspect-auto rounded-full object-cover" />
                                 <span className="text-base sm:text-xl leading-tight font-medium text-primary/80">
                                     {selectedChat.chatName}
-                                    <span className="block text-sm text-primary/60"> username: john99doe</span>
+                                    {!selectedChat.isGroupChat && <span className="block text-sm text-primary/60"> username: {selectedChat.username}</span>}
                                 </span>
                             </div>
 
@@ -43,7 +43,7 @@ export default function ProfileSection({
                                 <span className="text-left ">
                                     <h2 className="text-base text-primary/90 mb-2">About</h2>
                                     <p className="text-sm">
-                                        Never give up in life. Whatever life throws at you, make it into an opportunity and not a cause of misery. :)
+                                        {selectedChat.description}
                                     </p>
                                 </span>
                             
@@ -66,7 +66,7 @@ export default function ProfileSection({
                                 </span>
                             </div>)}
                             
-                            <div className="w-full mb-2 p-4 text-center border-t-1">
+                            {!selectedChat.isGroupChat && (<div className="w-full mb-2 p-4 text-center border-t-1">
                                 
                                 <span className="text-left ">
                                     <h2 className="text-base text-primary/90 mb-2">1 group in common</h2>
@@ -80,7 +80,31 @@ export default function ProfileSection({
                                         </div>
                                     </div>
                                 </span>
-                            </div>
+                            </div>)}
+                            {
+                                selectedChat.isGroupChat && (
+                                    <div className="w-full mb-2 p-4 text-center border-t-1">
+                                
+                                        <span className="text-left ">
+                                            <h2 className="text-base text-primary/90 mb-2">Members ({selectedChat.members.length})</h2>
+                                            <div className="flex flex-col gap-1 justify-start items-center">
+                                              {selectedChat.members.map((m) => {
+                                                return (
+                                                    <div className="flex w-full px-3 py-2 my-0.5 items-center rounded-md justify-start cursor-pointer hover:bg-zinc-300/70">
+                                                        <div className="w-8 h-8 relative min-w-8 mr-5">
+                                                            <img className="rounded-full object-contain" src={m.avatarUrl} />
+                                                        </div>
+                                                        <div className="flex flex-col justify-start items-start">
+                                                            <span className="text-base text-secondary-foreground/80"> {m.name}</span>
+                                                        </div>
+                                                    </div>
+                                                )
+                                              })}
+                                            </div>
+                                        </span>
+                                    </div>
+                                )
+                            }
 {/* 
                             <div className="w-full mb-2 p-4 text-center border-t-1">
                                 

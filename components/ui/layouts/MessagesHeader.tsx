@@ -25,7 +25,7 @@ export default function MessagesHeader({ handleChatSelection, selectedChat, setM
                 <ProfileSection selectedChat={selectedChat}>
                     <div className="w-12 h-12 relative min-w-12">
                         <img className="rounded-full object-contain" src={selectedChat.avatarUrl} />
-                        {selectedChat.isOnline && <span className="online-icon"></span>}
+                        {/* {selectedChat.isOnline && <span className="online-icon"></span>} */}
                     </div>
                     <h4 className="font-semibold text-md/snug text-primary/70">{selectedChat.chatName}</h4> 
                 </ProfileSection>

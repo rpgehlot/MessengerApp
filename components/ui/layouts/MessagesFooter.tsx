@@ -1,25 +1,30 @@
-import { IMessagesFooterProps } from "@/app/lib/descriptors";
+import { ChatMember, IMessagesFooterProps } from "@/app/lib/descriptors";
 import { EmojiPicker } from "@/lib/utils/hooks/EmojiPicker";
 import useOutsideClick from "@/lib/utils/hooks/useOutsideClick";
+import { FaceSmileIcon, PhotoIcon } from '@heroicons/react/24/outline';
 import { EmojiClickData } from "emoji-picker-react";
 import { AnimatePresence, motion } from "framer-motion";
-import { useRef, useState } from "react";
+import { useContext, useEffect, useRef, useState } from "react";
 import { Input } from "../input";
-// import { FaceSmileIcon, PhotoIcon } from "@heroicons/react/16/solid";
-import { FaceSmileIcon, PhotoIcon } from '@heroicons/react/24/outline';
+import { ChatAppContext, WebSocketContext } from "./chatWrapper";
 
+let timer: ReturnType<typeof setTimeout>;
 export default function MessagesFooter({ 
         handleChatSelection, 
         selectedChat, 
         messageSelectionEnabled, 
         setMessageSelectionEnabled,
-        selectedMessages
+        selectedMessages,
+        onNewMessageEntered
     } : IMessagesFooterProps ) 
 {
 
     const [message, setMessage] = useState<string>('');
     const [isEmojiPickerOpen, setIsEmojiPickerOpen] = useState<boolean>(false);
+    const [isTyping, setIsTyping] = useState<boolean>(false);
 
+    const chatContext = useContext(ChatAppContext);
+    const webSocketContext = useContext(WebSocketContext);
 
     const containerRef = useRef<HTMLDivElement>(null);
     const inputRef = useRef<HTMLInputElement>(null);
@@ -29,6 +34,53 @@ export default function MessagesFooter({
         console.log('clicked outside of emoji picker')
         setIsEmojiPickerOpen(false);        
     });
+
+    useEffect(() => {
+        
+        function onKeyPress() {
+            clearTimeout(timer);
+            if (!isTyping) {
+                setIsTyping(true);
+                console.log('typing start...');
+                webSocketContext?.current?.send(JSON.stringify({
+                    event : 'typing-start',
+                    payload : {
+                        topic : chatContext.selectedChat?.chatName,
+                        channel_id :chatContext.selectedChat?.chatId,
+                        members : chatContext.selectedChat?.members.map((u : ChatMember) => u.userId),
+                        userId : chatContext.user.id
+                    }
+                }));
+            }
+        }
+
+        function onKeyUp() {
+            clearTimeout(timer);
+            timer = setTimeout(() => {
+                console.log('typing end');
+                setIsTyping(false);
+                webSocketContext?.current?.send(JSON.stringify({
+                    event : 'typing-end',
+                    payload : {
+                        topic : chatContext.selectedChat?.chatName,
+                        channel_id :chatContext.selectedChat?.chatId,
+                        members : chatContext.selectedChat?.members.map((u : ChatMember) => u.userId),
+                        userId : chatContext.user.id
+                    }
+                }));
+            },300);
+        }
+
+        inputRef.current?.addEventListener('keypress', onKeyPress);
+        inputRef.current?.addEventListener('keyup', onKeyUp);
+
+        return () => {
+            inputRef.current?.removeEventListener('keypress', onKeyPress);
+            inputRef.current?.removeEventListener('keyup', onKeyUp);
+        };
+
+    },[inputRef.current, isTyping, chatContext.selectedChat]);
+
 
     const onEmojiClick = (emoijiData : EmojiClickData) => {
         if (!inputRef.current) return
@@ -47,42 +99,48 @@ export default function MessagesFooter({
         })
     };
 
-    const onFormSubmit = (e) => {
+    const onMessageEntered = async (e:any) => {
         e.preventDefault();
 
-        // alert('This message will be sent to api.  : '  + e.target.messageEntered.value);
-        if (e.target.messageEntered.value === '')
+        if(!message)
             return;
 
-        const newMessage = {
-            messageId : 9,
-            sender : {
-                name: 'Rituparn',
-                id : '628c9c75-c638-4fd6-8c39-515328e5a38b',
-                email : 'rpgehlot1991@gmail.com',
-                avatarUrl : 'https://randomuser.me/api/portraits/men/44.jpg'
+        let chatId = selectedChat.chatId;
+        if (selectedChat.newChat) {
+            const respone = await fetch('/api/channels/create',{ 
+                method: 'POST',
+                headers: {
+                'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    toUser : selectedChat.newChat.userId
+                }),
+            });
+
+            const data = await respone.json();
+            console.log('data : ',data);
+            chatId = data.response.chatId;
+        }
+
+        await fetch('/api/saveMessage',{ 
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
             },
-            createdAt : '2025-04-07T14:15:19.832Z',
-            content : e.target.messageEntered.value,
-            loggedInUserId : '628c9c75-c638-4fd6-8c39-515328e5a38b',
-            read : false,
-            displayName : true
-        };
-
-        handleChatSelection({
-            ...selectedChat,
-            messages : [
-                ...(selectedChat?.messages || []),
-                newMessage
-            ]
+            body: JSON.stringify({
+              content: message,
+              channelId: chatId,
+              senderId : chatContext.user.id
+            }),
         });
-
+        
         setMessage('');
-    }
+        onNewMessageEntered();
+    };
 
     return (
         <div className="flex h-14 sm:h-16 bg-zinc-200/70 p-2 box-border relative items-center justify-start">
-            {!messageSelectionEnabled && <form className="grow flex" onSubmit={onFormSubmit}>
+            {!messageSelectionEnabled && <form className="grow flex">
                     <div className="relative grow flex">
                         <div className="absolute left-2 top-1/2 align-middle transform -translate-y-[50%] cursor-pointer">
                             <span className="flex items-center cursor-pointer text-zinc-600" onClick={()=> setIsEmojiPickerOpen(true)}>
@@ -118,7 +176,7 @@ export default function MessagesFooter({
 
                         <Input ref={inputRef} name="messageEntered" className="bg-white border-0 h-10 sm:h-12 hover:border-none focus-visible:ring-[1px] md:text-base pl-24" placeholder="Type a message"  value={message} onChange={(e) => setMessage(e.target.value)}/>
                     </div>
-                    <button type="submit" className="min-w-12 flex items-center justify-center cursor-pointer hover:bg-zinc-200/50">
+                    <button className="min-w-12 flex items-center justify-center cursor-pointer hover:bg-zinc-200/50" onClick={onMessageEntered}>
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="size-6">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 12 3.269 3.125A59.769 59.769 0 0 1 21.485 12 59.768 59.768 0 0 1 3.27 20.875L5.999 12Zm0 0h7.5" />
                         </svg>
