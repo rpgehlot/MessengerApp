@@ -30,7 +30,7 @@ export async function googleSignInAction() {
         access_type: 'offline',
         prompt: 'consent',
       },
-      redirectTo: 'http://localhost:3000/api/auth/callback',
+      redirectTo: `${window.location.protocol}//${window.location.host}/api/auth/callback`,
     },
   });
 
