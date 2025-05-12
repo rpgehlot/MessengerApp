@@ -86,7 +86,6 @@ export async function POST(request: Request) {
                     first_name, 
                     last_name,
                     avatar_url, 
-                    is_online, 
                     username,
                     bio,
                     user_id
@@ -154,7 +153,6 @@ export async function POST(request: Request) {
                             first_name, 
                             last_name,
                             avatar_url, 
-                            is_online, 
                             username,
                             bio
                         )

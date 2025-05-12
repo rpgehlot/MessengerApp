@@ -61,15 +61,16 @@ export async function fetchAllChats(supabase: SupabaseClient<Database>) {
                             first_name, 
                             last_name,
                             avatar_url, 
-                            is_online, 
                             username,
                             bio
                         )
             )`)
             .eq('channel_id', channel.channels.id);
 
-        if(channelUsersError) 
+        if(channelUsersError) {
+            console.log(channelUsersError);
             throw new Error('Error fetching users for a chat');
+        }
 
         if ( !channel.channels.is_group ) {
 

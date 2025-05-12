@@ -161,7 +161,6 @@ export type Database = {
           bio: string
           first_name: string
           id: number
-          is_online: boolean
           last_name: string
           user_id: string
           username: string
@@ -171,7 +170,6 @@ export type Database = {
           bio?: string
           first_name: string
           id?: number
-          is_online?: boolean
           last_name: string
           user_id: string
           username: string
@@ -181,7 +179,6 @@ export type Database = {
           bio?: string
           first_name?: string
           id?: number
-          is_online?: boolean
           last_name?: string
           user_id?: string
           username?: string
@@ -203,8 +200,8 @@ export type Database = {
     Functions: {
       checkifcommonchannelexists: {
         Args:
-          | { user_id1: string; user_id2: string }
           | { user_id1: string; user_id2: string; isgroup: boolean }
+          | { user_id1: string; user_id2: string }
         Returns: {
           channel_id: number
         }[]

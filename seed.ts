@@ -111,7 +111,6 @@ const main = async () => {
         last_name: public_users[ctx.index].user_metadata.lastName,
         username : public_users[ctx.index].user_metadata.username,
         avatar_url : `https://randomuser.me/api/portraits/${index > 0 ? 'women' : 'men'}/${index2}.jpg`,
-        is_online : true
       }
     })
   );
