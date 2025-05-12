@@ -168,21 +168,23 @@ export function ChatWrapper(props : ChatWrapperProps) {
 
         // when a new message arrives in the selected chat for a user, mark the message as read.
         if (selectedChat?.chatId === newMessage.channel_id  && newMessage.sender_id != props.user.id) {
-            console.log('marking the message as read : ',selectedChat, newMessage)
-            try {
-                await fetch('/api/messages/mark-read',{ 
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        channelId: selectedChat.chatId,
-                        senderId : props.user.id
-                    }),
-                });
-            } catch(e){
-
-            }
+            setTimeout(async () => {
+                console.log('marking the message as read : ',selectedChat, newMessage)
+                try {
+                    await fetch('/api/messages/mark-read',{ 
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            channelId: selectedChat.chatId,
+                            senderId : props.user.id
+                        }),
+                    });
+                } catch(e){
+    
+                }
+            },1000);
         }
     };
 
