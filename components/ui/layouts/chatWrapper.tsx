@@ -102,7 +102,7 @@ export function ChatWrapper(props : ChatWrapperProps) {
 
 
     const handleNewMessage = async (newMessage : Tables<'messages'>) => {
-        console.log('selectedchat : ',selectedChat);
+        console.log('handleNewMessage : ',newMessage, Date.now());
         const { data: sender, error } = await supabase
             .from("users")
             .select(`
@@ -132,6 +132,7 @@ export function ChatWrapper(props : ChatWrapperProps) {
             const foundChat = prevChats[foundChatIndex];
 
             let status = newMessage.status;
+            console.log('pendingUpdates : ',pendingUpdates);
             if(pendingUpdates.has(newMessage.entry_id)) {
                 const queuedUpdate = pendingUpdates.get(newMessage.entry_id) as Tables<'messages'>;
                 status = queuedUpdate.status;
@@ -189,6 +190,8 @@ export function ChatWrapper(props : ChatWrapperProps) {
         
         const oldPayload = old as Tables<'messages'>;
         const newPayload = newobj as Tables<'messages'>;
+
+        console.log(`handleMessageUpdate :: old status - ${oldPayload.status} new status - ${newPayload.status}`,Date.now());
 
         if (oldPayload.status !== newPayload.status) {
             setChats((prevChats) => {

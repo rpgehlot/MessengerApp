@@ -1,1 +1,1 @@
-ALTER TABLE users_metadata if exists drop column is_online;
+ALTER TABLE users_metadata drop column is_online;
