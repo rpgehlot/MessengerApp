@@ -1,5 +1,6 @@
 This is a minimal messenger application built using [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
+Live demo url : https://messenger-app-steel.vercel.app/chat
 ![plot](./public/messenger.png)
 
 ## Getting Started
