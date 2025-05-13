@@ -24,7 +24,7 @@ Experience the app in action: [Messenger App Demo](https://messenger-app-steel.v
 - ⌨️ **Real-Time Typing Status**: See when other users are typing for a more interactive chat experience.
 - ⏳ **Offline Messaging**: Messages are queued and delivered when you're back online.
 - 🔍 **User Search**: Find friends quickly using unique usernames.
-- 👥 **Group Chat**: Coming soon, with media support for sharing photos, videos, and more.
+- 👥 **Group Chat**: Chat with group of people 
 
 ## Why Messenger App?
 
