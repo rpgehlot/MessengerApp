@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import { createClient } from '@/utils/supabase/server'
 import { count } from 'console';
-import { supabaseUrl } from '@/utils/config';
+import { siteUrl, supabaseUrl } from '@/utils/config';
 
 
 export type LoginState = {
@@ -182,7 +182,8 @@ export async function forgotPasswordAction(prevState: LoginState, formData : For
 
   console.log(data.email);
   const { error, data: passwordResetData } = await supabase.auth.resetPasswordForEmail(data.email,{
-    redirectTo  : `${supabaseUrl}/reset`
+    redirectTo  : `${siteUrl}/reset`
+    
   });
   if (error) {
     return {
