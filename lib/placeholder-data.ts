@@ -44,8 +44,20 @@ export const chats = [
         chatName : 'John Doe',
         isGroupChat : false,
         latestMessage : {
-            content : 'yeah man! seems like you are caught up in a lot of stuff',
-            createdAt : '2025-04-07T14:14:13.832Z'
+            messageId : 7,
+            sender : {
+                name: 'John Doe',
+                id : 0,
+                email : 'john.doe@gmail.com',
+                avatarUrl : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80'
+            },
+            createdAt : '2025-04-07T14:14:13.832Z',
+            media : {
+                url : images[27].download_url,
+                type : 'image'
+            },
+            loggedInUserId : RITUPARN_USERID,
+            read : false
         },
         isOnline : true,
         avatarUrl : 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?ixlib=rb-1.2.1&ixid=eyJhcHBfaWQiOjEyMDd9&auto=format&fit=facearea&facepad=2&w=256&h=256&q=80',
@@ -159,9 +171,19 @@ export const chats = [
         chatName : 'Lucky ',
         isGroupChat : false,
         isOnline : false,
-        latestMessage : {
+        latestMessage :  {
+            messageId : 5,
+            sender : {
+                name: 'Rituparn Gehlot',
+                id : RITUPARN_USERID,
+                email : 'rpgehlot1991@gmail.com',
+                avatarUrl : RITUPARN_AVATAR
+            },
+            createdAt : '2025-04-07T14:15:19.832Z',
             content : 'I am currently in NY. what about you ??',
-            createdAt : '2025-04-07T14:14:13.832Z'
+            loggedInUserId : RITUPARN_USERID,
+            read : false
+
         },
         avatarUrl : 'https://randomuser.me/api/portraits/women/65.jpg',
         unreadMessagesCount : 0,
@@ -243,9 +265,19 @@ export const chats = [
         chatName : 'Alice',
         isGroupChat : false,
         isOnline : true,
-        latestMessage : {
-            content : 'Good to hear that !! lets catch up then',
-            createdAt : '2025-04-07T14:14:13.832Z'
+        latestMessage :  {
+            messageId : 5,
+            sender : {
+                name: 'Rituparn Gehlot',
+                id : RITUPARN_USERID,
+                email : 'rpgehlot1991@gmail.com',
+                avatarUrl : RITUPARN_AVATAR
+            },
+            createdAt : '2025-04-07T14:15:19.832Z',
+            content : 'Good to hear that !! lets catch up then ',
+            loggedInUserId : RITUPARN_USERID,
+            read : true
+
         },
         avatarUrl : ALICE_AVATAR,
         unreadMessagesCount : 0,
@@ -313,9 +345,18 @@ export const chats = [
         chatName : 'Luke Jon',
         isGroupChat : false,
         isOnline : true,
-        latestMessage : {
+        latestMessage :  {
+            messageId : 0,
+            sender : {
+                name: 'Luke',
+                id : 4,
+                email : 'luke@gmail.com',
+                avatarUrl : LUKE_AVATAR
+            },
+            createdAt : '2025-04-07T14:15:19.832Z',
             content : 'Wanna join in for party time at my place??',
-            createdAt : '2025-04-07T14:14:13.832Z'
+            loggedInUserId : RITUPARN_USERID,
+            read : false
         },
         avatarUrl : LUKE_AVATAR,
         unreadMessagesCount : 1,
@@ -340,8 +381,16 @@ export const chats = [
         chatName : 'Jon Farewell party',
         isGroupChat  : true,
         latestMessage : {
+            messageId : 5,
+            sender : {
+                name: 'Lucky',
+                id : 1,
+                email : 'LUCKY@gmail.com',
+                avatarUrl : LUCKY_AVATAR
+            },
+            createdAt : '2025-04-07T14:15:19.832Z',
             content : 'Throw a party jon :)',
-            createdAt : '2025-04-07T14:14:13.832Z'
+            loggedInUserId : RITUPARN_USERID
         },
         avatarUrl : 'https://randomuser.me/api/portraits/men/21.jpg',
         unreadMessagesCount : 2,

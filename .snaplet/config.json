@@ -1,0 +1,4 @@
+{
+  "adapter": "pg",
+  "projectDescription": "This project is about building an authentication and authorization system with features such as multi-factor authentication, single sign-on, and user management, likely using a framework like Supabase."
+}

@@ -1,0 +1,1 @@
+ALTER TABLE users_metadata drop column is_online;

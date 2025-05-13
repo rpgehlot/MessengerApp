@@ -1,0 +1,1 @@
+alter table if exists public.users_metadata add online boolean default false;

@@ -11,17 +11,38 @@ import {
 } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { signInAction, State } from "@/app/lib/actions"
+import {  LoginState, signInAction } from "@/app/lib/actions"
 import { useActionState, useEffect } from 'react';
 import { toast } from "sonner"
 import { EnvelopeIcon, KeyIcon } from "@heroicons/react/24/outline";
+import { createClient } from "@/utils/supabase/client";
+import Link from "next/link";
+
+
+export async function googleSignInAction() {
+
+  const supabase = await createClient();
+
+  const {data, error} = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      queryParams: {
+        access_type: 'offline',
+        prompt: 'consent',
+      },
+      redirectTo: `${window.location.protocol}//${window.location.host}/api/auth/callback`,
+    },
+  });
+
+  console.log('error : ',error, data);
+}
 
 export function LoginForm({
   className,
   ...props
 }: React.ComponentProps<"div">) {
 
-  const initialState : State = { message : null, errors : null };
+  const initialState : LoginState = { message : null, errors : [] };
   const [state, formAction, isPending] = useActionState(signInAction, initialState);
 
   useEffect(() => {
@@ -29,6 +50,8 @@ export function LoginForm({
       toast.error(`${state.errors[0]}`);
     }
   },[state.errors]);
+
+
 
   return (
     <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -63,19 +86,19 @@ export function LoginForm({
                     name="email"
                     placeholder="john.doe@gmail.com"
                     className="pl-11"
-                    // required
+                    required
                   />
                 </div>
               </div>
               <div className="grid gap-3">
                 <div className="flex items-center">
                   <Label htmlFor="password">Password</Label>
-                  <a
-                    href="#"
+                  <Link
+                    href="/forgot-password"
                     className="ml-auto inline-block text-sm underline-offset-4 hover:underline"
                   >
                     Forgot your password?
-                  </a>
+                  </Link>
                 </div>
                 <div className="relative">
                   <span className="absolute top-[50%] left-5 transform -translate-[50%]">
@@ -85,7 +108,7 @@ export function LoginForm({
                     id="password" 
                     type="password" 
                     name="password" 
-                    // required 
+                    required 
                   />
                 </div>
                 
@@ -94,18 +117,23 @@ export function LoginForm({
                 <Button type="submit" className="w-full">
                   Login
                 </Button>
-                <Button variant="outline" className="w-full">
-                  Login with Google
-                </Button>
               </div>
             </div>
+            
+          </form>
+          <div className="flex flex-col gap-1 mt-3">
+            <Button onClick={googleSignInAction} variant="outline" className="w-full">
+                    Login with Google
+            </Button>
             <div className="mt-4 text-center text-sm">
               Don&apos;t have an account?{" "}
               <a href="/signup" className="underline underline-offset-4">
                 Sign up
               </a>
             </div>
-          </form>
+          </div>
+         
+         
         </CardContent>
       </Card>
     </div>
